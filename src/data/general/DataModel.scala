@@ -16,16 +16,16 @@ import java.util.concurrent.TimeUnit
 import java.net.URL
 import java.util.Arrays
 
-class DataModel(base: File) {
+class DataModel(install: File, user: File) {
 
-  val hullsByRace = time( "Hulls", loadHulls(base) )
-  val tokens = time( "Tokens", loadTokens( new File(base.getAbsolutePath() + "/Content/Localization/English.xml")) )
-  val weapons = time( "Weapons", loadWeapons(base) )
-  val modules = time( "Modules", loadModules(base).filterNot(_._1 == "Dummy") )
+  val hullsByRace = time( "Hulls", loadHulls(install) )
+  val tokens = time( "Tokens", loadTokens( new File(install.getAbsolutePath() + "/Content/Localization/English.xml")) )
+  val weapons = time( "Weapons", loadWeapons(install) )
+  val modules = time( "Modules", loadModules(install).filterNot(_._1 == "Dummy") )
   val moduleImages = time( "Textures", loadModuleTextures)
-  var shipDesigns = time( "Ships", loadShips(base))
+  var shipDesigns = time( "Ships", loadShips(install, user))
 
-  val lightningBolt = loadTexture( new File( base.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
+  val lightningBolt = loadTexture( new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
 
   private def loadTexture(f: File) : Option[ImageIcon] = {
     XnbReader.read(f) match {
@@ -49,7 +49,7 @@ class DataModel(base: File) {
         .toSeq.sorted.toArray
 
   private def loadModuleTextures : Map[String, ImageIcon] = {
-    val dir = new File( base.getAbsolutePath() + "/Content/Textures/Modules")
+    val dir = new File( install.getAbsolutePath() + "/Content/Textures/Modules")
     val eithers = for { file <- dir.listFiles().par }
         yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
 

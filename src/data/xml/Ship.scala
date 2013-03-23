@@ -39,9 +39,14 @@ object Ship {
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
       hull, modules)
 
-  def loadShips( base: File ) : Map[String, Ship] = {
-    val shipsDir = new File(base.getAbsolutePath() + "/Content/StarterShips")
+  def loadShips( install: File, user: File ) : Map[String, Ship] = {
+    val shipsDirs = Seq(
+          new File(install.getAbsolutePath() + "/Content/StarterShips"),
+          new File(user.getAbsolutePath() + "/Saved Designs"),
+          new File(user.getAbsolutePath() + "/WIP")
+        )
     val allShips = for {
+      shipsDir <- shipsDirs
       file <- shipsDir.listFiles().par
       xml = XML.fromInputStream(XmlUtils.read(file))
       ship <- ships(xml)
