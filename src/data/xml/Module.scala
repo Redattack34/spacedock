@@ -47,6 +47,16 @@ object Module {
     warpThrust <- e \ 'WarpThrust \ text
   } yield EngineData( thrust.toInt, turnThrust.toInt, warpThrust.toInt )
 
+  case class HangarData( timerConstant: Int, isTroopBay: Boolean, isSupplyBay: Boolean )
+
+  private def hangars( e: Elem ) : Seq[HangarData] = for {
+    timer <- e \ 'hangerTimerConstant \ text
+    troopBay = e \ 'IsTroopBay \ text
+    supplyBay = e \ 'IsSupplyBay \ text
+  } yield HangarData( timer.toInt,
+      troopBay.headOption.map(_.toBoolean).getOrElse(false),
+      supplyBay.headOption.map(_.toBoolean).getOrElse(false))
+
   case class ShipModule(
       //Basics
       nameIndex: Int, descriptionIndex: Int, uid: String,
@@ -62,7 +72,8 @@ object Module {
       shieldData: Option[ShieldData],
       powerPlantData: Option[PowerPlantData],
       weaponData: Option[WeaponData],
-      engineData: Option[EngineData])
+      engineData: Option[EngineData],
+      hangarData: Option[HangarData])
 
   private def modules( e: Elem ) : Seq[ShipModule] = for {
       name <- e \ 'NameIndex \ text
@@ -87,6 +98,7 @@ object Module {
       powerPlantData = powerPlants(e)
       weaponData = weapons(e)
       engineData = engines(e)
+      hangarData = hangars(e)
     } yield ShipModule( name.toInt, description.toInt, uid,
         xSize.headOption.map(_.toInt).getOrElse(1),
         ySize.headOption.map(_.toInt).getOrElse(1), moduleType,
@@ -96,7 +108,7 @@ object Module {
         ordnanceCapacity.headOption.map(_.toInt),
         cargoCapacity.headOption.map(_.toInt),
         shieldData.headOption, powerPlantData.headOption,
-        weaponData.headOption, engineData.headOption )
+        weaponData.headOption, engineData.headOption, hangarData.headOption )
 
 
   def loadModules( base: File ) : Map[String, ShipModule] = {
@@ -110,7 +122,7 @@ object Module {
   }
 
   val dummy = new ShipModule(0, 0, "", 1, 1, "", "", "", 0.0f, 0, 0, 0,
-      None, None, None, None, None, None, None)
+      None, None, None, None, None, None, None, None)
 
   def main(args: Array[String]) {
     val f = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\ShipModules")

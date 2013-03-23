@@ -19,6 +19,7 @@ import data.xml.Module.ShipModule
 import gui.MouseClickWrapper.click2wrapper
 import scala.swing.event.MouseReleased
 import scala.swing.event.MouseDragged
+import javax.swing.JOptionPane
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -162,7 +163,17 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
   private def leftClick : Unit = {
     mode match {
-      case PlacementMode(mod) => shipModel = shipModel.placeModule(mouseOver, mod)
+      case PlacementMode(mod) => {
+        if ( mod.hangarData.isDefined && !mod.hangarData.get.isSupplyBay &&
+                !mod.hangarData.get.isTroopBay) {
+          val selected = JOptionPane.showInputDialog(this.peer, "", "Select Fighter",
+              JOptionPane.QUESTION_MESSAGE, null,
+              dataModel.fighterDesigns.asInstanceOf[Array[Object]], null)
+          if ( selected == null ) return
+          else shipModel = shipModel.placeModule(mouseOver, mod, Some(selected.toString))
+        }
+        else shipModel = shipModel.placeModule(mouseOver, mod)
+      }
       case _ => {
           val weaponAt = shipModel.weaponAt(mouseOver)
                   weaponAt match {

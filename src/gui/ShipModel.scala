@@ -9,12 +9,12 @@ import data.general.Point
 import data.general.RangeOverlap._
 import scala.collection._
 
-case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boolean, facing: Float )
+case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boolean, facing: Float, slotOption: Option[String] )
 
 object ShipModel {
 
   private val emptyHull : Hull = Hull("", "", "", None, Seq(), "", "", Seq() )
-  private val emptyShip : Ship = Ship("", None, None, "", Seq() )
+  private val emptyShip : Ship = Ship("", "", None, None, "", Seq() )
 
   val empty = apply(null, emptyHull, emptyShip, false)
 
@@ -29,7 +29,8 @@ object ShipModel {
         case _ => dummy
       }
 
-      ModelSlot( slot, module, false, shipSlot.map(_.facing).getOrElse(0.0f) )
+      ModelSlot( slot, module, false, shipSlot.map(_.facing).getOrElse(0.0f),
+          shipSlot.flatMap(_.slotOptions) )
     }
 
     val pointSlots = modelSlots.map( tuple => ( Point(tuple._1.x / 16, tuple._1.y / 16), tuple._2) )
@@ -46,8 +47,8 @@ object ShipModel {
   }
 
   def apply( dataModel: DataModel, hull: Hull, usePower: Boolean ) : ShipModel = {
-    val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f))
-    val ship = Ship("New " + hull.name, None, None, "", shipModules)
+    val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f, None))
+    val ship = Ship("New " + hull.name, hull.role, None, None, "", shipModules)
     apply( dataModel, hull, ship, usePower )
   }
 }
@@ -124,7 +125,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, privat
 
     val slotToUpdate = moduleToRemove.head
 
-    val toBeReplaced = moduleToRemove.mapValues(_.copy(module = dummy) )
+    val toBeReplaced = moduleToRemove.mapValues(_.copy(module = dummy, slotOption = None) )
     copy( slots = slots ++ toBeReplaced ).computePowerGrid
   }
 
@@ -136,7 +137,9 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, privat
 
   def hasPower( point: Point ) = slots(point).power
 
-  def placeModule( point: Point, newModule: ShipModule ) : ShipModel = {
+  def placeModule( point: Point, newModule: ShipModule ) : ShipModel =
+    placeModule( point, newModule, None )
+  def placeModule( point: Point, newModule: ShipModule, option: Option[String] ) : ShipModel = {
     val xRange = point.x until point.x + newModule.xSize
     val yRange = point.y until point.y + newModule.ySize
 
@@ -150,10 +153,10 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, privat
     val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
     val removed : Map[Point, ModelSlot] = toBeRemoved.map{ tuple =>
       val (p, slot) = tuple
-      (p, slots(p).copy( module = dummy))
+      (p, slot.copy( module = dummy, slotOption = None))
     }
 
-    val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = newModule ) )
+    val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = newModule, slotOption = option ) )
     val copyModel = copy( slots = slots ++ toBePlaced )
 
     if ( newModule.powerPlantData.isDefined ) copyModel.computePowerGrid

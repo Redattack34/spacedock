@@ -14,6 +14,7 @@ import data.xml.Ship._
 import com.google.common.base.Stopwatch
 import java.util.concurrent.TimeUnit
 import java.net.URL
+import java.util.Arrays
 
 class DataModel(base: File) {
 
@@ -42,6 +43,10 @@ class DataModel(base: File) {
     tupleOpt.foreach( shipDesigns += _)
     tupleOpt.map(_._2)
   }
+
+  def fighterDesigns : Array[String] =
+    shipDesigns.values.filter( _.role == "fighter").map(_.name)
+        .toSeq.sorted.toArray
 
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = new File( base.getAbsolutePath() + "/Content/Textures/Modules")

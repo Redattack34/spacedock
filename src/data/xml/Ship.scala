@@ -13,26 +13,30 @@ import java.net.URL
 
 object Ship {
 
-  case class ShipModuleSlot( pos: Position, installed: String, facing: Float )
+  case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
+      slotOptions: Option[String] )
 
   private def slots( e: Elem ) : Seq[ShipModuleSlot] = for {
     moduleSlot <- e \ 'ModuleSlotData
     pos <- positions( moduleSlot )
     module <- moduleSlot \ 'InstalledModuleUID \ text
     facing <- moduleSlot \ 'facing \ text
-  } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat)
+    slotOptions = moduleSlot \ 'SlotOptions \ text
+  } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
+      slotOptions.headOption.filter(_ != "NotApplicable"))
 
-  case class Ship( name: String, combatState: Option[String], boardingDefense: Option[Int],
+  case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
     hull: String, moduleSlotList: Seq[ShipModuleSlot])
 
   private def ships(e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
+    role <- e \ 'Role \ text
     combatState = e \ 'CombatState \ text
     boardingDefense = e \ 'MechanicalBoardingDefense \ text
     hull <- e \ 'Hull \ text
     moduleList <- e \ 'ModuleSlotList
     modules = slots(moduleList)
-  } yield Ship( name, combatState.headOption, boardingDefense.headOption.map(_.toInt),
+  } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
       hull, modules)
 
   def loadShips( base: File ) : Map[String, Ship] = {
@@ -63,6 +67,5 @@ object Ship {
 
     allShips.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
     allShips.filter(_._2.isDefined).foreach(t => println( t._1 + ": " + t._2.get.toString ))
-    allShips.filter(_._2.isDefined).foreach(t => println( t._1 + ": " + t._2.get.combatState))
   }
 }
