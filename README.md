@@ -1,0 +1,1 @@
+The XNBDecompressor software was created by alisci01 and can be found here: https://bitbucket.org/alisci01/xnbdecompressor

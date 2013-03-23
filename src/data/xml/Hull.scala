@@ -1,0 +1,83 @@
+package data.xml
+
+import java.io.File
+import com.codecommit.antixml.Elem
+import com.codecommit.antixml.Selector.symbolToSelector
+import com.codecommit.antixml.XML
+import com.codecommit.antixml.text
+import scala.collection.immutable.HashMap
+import data.xml.Position._
+
+object Hull {
+
+
+
+  case class HullModuleSlot( pos: Position, restrictions: String,
+      slotOptions: Option[String], shieldPower: Option[Int], facing: Option[Float] )
+
+  private def slots(e : Elem) : Seq[HullModuleSlot] = for {
+    moduleSlot <- e \ 'ModuleSlotData
+    position <- positions( moduleSlot )
+    restriction <- moduleSlot \ 'Restrictions \ text
+    slotOptions = moduleSlot \ 'SlotOptions \ text
+    shieldPower = moduleSlot \ 'Shield_Power \ text
+    facing = moduleSlot \ 'facing \ text
+  } yield HullModuleSlot(position, restriction,
+      slotOptions.headOption, shieldPower.headOption.map(_.toInt),
+      facing.headOption.map(_.toFloat) )
+
+  case class ThrusterZone(pos: Position, scale: Int)
+
+  private def thrusters(e : Elem) : Seq[ThrusterZone] = for {
+    thrusterList <- e \ 'ThrusterList
+    thrusterZone <- thrusterList \ 'ThrusterZone
+    pos <- positions( thrusterZone )
+    scale <- thrusterZone \ 'scale \ text
+  } yield ThrusterZone( pos, scale.toInt )
+
+  case class Hull( name: String, role: String, iconPath: String,
+      selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
+      defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
+
+  private def hulls(e : Elem) : Seq[Hull] = for {
+    name <- e \ 'Name \ text
+    role <- e \ 'Role \ text
+    iconPath <- e \ 'IconPath \ text
+    selectionGraphic = e \ 'SelectionGraphic \ text
+    allThrusters = thrusters( e )
+    modelPath <- e \ 'ModelPath \ text
+    defaultAIState <- e \ 'DefaultAIState \ text
+    moduleSlotList <- e \ 'ModuleSlotList
+    moduleSlots = slots(moduleSlotList)
+  } yield Hull( name, role, iconPath, selectionGraphic.headOption, allThrusters,
+      modelPath, defaultAIState, moduleSlots)
+
+  private def raceHulls( dir: File ) : Map[String, Hull] = {
+    val raceHulls = for {
+      file <- dir.listFiles().par
+      xml = XML.fromInputStream(XmlUtils.read(file))
+      hull <- hulls(xml)
+    } yield (hull.name, hull)
+    HashMap(raceHulls.seq:_*)
+  }
+
+  def loadHulls( base: File ) : Map[String, Map[String, Hull]] = {
+    val hullsDir = new File(base.getAbsolutePath() + "/Content/Hulls")
+    val allHulls = for {
+        dir <- hullsDir.listFiles()
+    } yield (dir.getName, raceHulls(dir))
+    HashMap(allHulls:_*)
+  }
+
+  def main(args: Array[String]) {
+    val f = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\Hulls")
+    val allHulls = for {
+      dir <- f.listFiles()
+      file <- dir.listFiles()
+      xml = XML.fromInputStream(XmlUtils.read(file))
+      hull = hulls(xml)
+    } yield (file.getName, hull.headOption)
+
+    allHulls.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
+  }
+}
