@@ -150,7 +150,9 @@ object Ship {
   
   def saveShip( ship: ShipModel, user: File ) : (String, Ship) = {
     val xml = shipToXml(ship)
-    val file = new File( user.getAbsolutePath() + "/Saved Designs/" + ship.ship.name + ".xml")
+    val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "/WIP/"
+              else "/Saved Designs/"
+    val file = new File( user.getAbsolutePath() + dir + ship.ship.name + ".xml")
     val scalaXml = scala.xml.XML.loadString(xml.toString)
     val printer = new PrettyPrinter(200, 2)
     

@@ -169,8 +169,52 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
   }
 
   def withCombatState( cs: String ) = copy( combatState = cs )
-
   def withName( name: String ) = copy( ship = ship.copy( name = name ) )
+  
+  def calculateCost = allModules.values.map(_.cost).sum
+  def calculatePowerCapacity = allModules.values
+      .filter(_.powerPlantData.isDefined)
+      .map(_.powerPlantData.get.powerStoreMax)
+      .sum
+  def calculateRecharge = {
+    val modules = allModules.values
+    val powerGeneration = modules.filter(_.powerPlantData.isDefined).map(_.powerPlantData.get.powerFlowMax).sum
+    val powerUse = modules.map(_.powerDraw).sum
+    powerGeneration - powerUse
+  }
+  def calculateRechargeAtWarp = "???"
+  def calculateHitpoints = allModules.values.map(_.health).sum
+  def calculateShieldPower = allModules.values
+      .filter(_.shieldData.isDefined)
+      .map(_.shieldData.get.shieldPower)
+      .sum
+  def calculateMass = allModules.values.map(_.mass).sum
+  def calculateSublightSpeed = "???"
+  def calculateFtlSpeed = "???"
+  def calculateTurnRate = "???"
+  def calculateOrdnanceCapacity = allModules.values
+      .flatMap(_.ordnanceCapacity)
+      .sum
+  def calculateCargoSpace = allModules.values
+      .flatMap(_.cargoCapacity)
+      .sum
+  def hasCommandModule = allModules.values
+      .find(_.moduleType == "Command")
+      .isDefined
+  def hasEmptySlots = {
+    val slots = mutable.Map[Point, HullModuleSlot](allSlots.toSeq:_*)
+
+    allModules.foreach { tuple =>
+      val (point, module) = tuple
+
+      for {
+        x <- point.x until point.x + module.xSize
+        y <- point.y until point.y + module.ySize
+      } slots -= Point(x, y)
+    }
+
+    !slots.isEmpty
+  }
   
   private def computePowerGrid : ShipModel = {
     val dePowered = slots.mapValues(_.copy(power = false))
