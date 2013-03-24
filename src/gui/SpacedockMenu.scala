@@ -15,21 +15,32 @@ import scala.swing.ButtonGroup
 import javax.swing.JOptionPane
 import java.net.URI
 import java.net.URL
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
 case class ZoomSet( zoom: Boolean ) extends Event
 case class FiringArcsSet( showFiringArcs: Boolean ) extends Event
 case class CombatStateSet( str: String ) extends Event
+case object SaveShip extends Event
 
 class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   case class HullMenuItem(val hull: Hull, str: String) extends MenuItem(str)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
-  case object LoadShipFromUrlItem extends MenuItem("Load From URL")
   case object ZoomMenuItem extends CheckBox("Zoom  ")
   case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs  ")
-
+  
+  case object LoadShipFromFileItem extends MenuItem("Load From File")
+  case object LoadShipFromUrlItem extends MenuItem("Load From URL")
+  case object SaveShipItem extends MenuItem("Save")
+  case object ExitItem extends MenuItem("Exit")
+  
+  val fileMenu = new Menu("File")
+  fileMenu.contents ++= Seq( LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, ExitItem )
+  this.contents += fileMenu
+  
   val attackRuns = new RadioButton("Attack Runs  ")
   attackRuns.tooltip = data.tokens(200)
 
@@ -110,15 +121,33 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   addShips
 
-  loadShip.contents += LoadShipFromUrlItem
-  listenTo(LoadShipFromUrlItem)
+  listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, ExitItem)
 
   contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, attackRuns,
       artillery, holdPosition, orbitPort, orbitStarboard, evade)
   listenTo( ZoomMenuItem, ShowFiringArcsItem, attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
 
+  def shipLoaded(shipOpt: Option[Ship]) = {
+    if ( shipOpt.isEmpty ) {
+      JOptionPane.showMessageDialog(this.peer.getParent(),
+          "Failed to Load Ship", "Failed to Load Ship", JOptionPane.ERROR_MESSAGE)
+    }
+    else {
+      val ship = shipOpt.get
+      val split = ship.hull.split("/")
+      val race = split(0)
+      val hullName = split(1)
+      val hull = data.hullsByRace(race)(hullName)
+      val menuItem = new ShipMenuItem(ship, hull)
+      shipMap(hullName).contents += menuItem
+      listenTo(menuItem)
+      publish(ShipSelected(ship, hull))
+    }
+  }
+      
   reactions += {
+    case ShipSaved(ship) => shipLoaded(Some(ship))
     case ButtonClicked(HullMenuItem(hull, _)) => publish( HullSelected(hull) )
     case ButtonClicked(ShipMenuItem(ship, hull)) => {
       publish( ShipSelected(ship, hull))
@@ -136,24 +165,22 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
           "Enter URL:", "Load Ship From URL", JOptionPane.QUESTION_MESSAGE)
       if (urlString != null) {
         val url = new URL( urlString )
-
-
-        val shipOpt = data.loadShipFromUrl(url)
-        if ( shipOpt.isEmpty ) {
-          JOptionPane.showMessageDialog(this.peer.getParent(),
-              "Failed to Load Ship", "Failed to Load Ship", JOptionPane.ERROR_MESSAGE)
-        }
-        else {
-          val ship = shipOpt.get
-          val split = ship.hull.split("/")
-          val race = split(0)
-          val hullName = split(1)
-          val hull = data.hullsByRace(race)(hullName)
-          shipMap(hullName).contents += new ShipMenuItem(ship, hull)
-          publish(ShipSelected(ship, hull))
-        }
+        shipLoaded(data.loadShipFromUrl(url))
       }
     }
+    case ButtonClicked(LoadShipFromFileItem) => {
+      val chooser = new JFileChooser
+      chooser.setFileFilter(new FileNameExtensionFilter("Ship XML Files", "xml"))
+      chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
+      val accepted = chooser.showOpenDialog(this.peer.getParent())
+      if (accepted == JFileChooser.APPROVE_OPTION) {
+        val file = chooser.getSelectedFile()
+        val shipOpt = data.loadShipFromFile(file)
+        shipLoaded(shipOpt)
+      }
+    }
+    case ButtonClicked(SaveShipItem) => publish(SaveShip)
+    case ButtonClicked(ExitItem) => System.exit(0)
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )
     case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet("AttackRuns"))

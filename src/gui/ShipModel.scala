@@ -13,12 +13,12 @@ case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boole
 
 object ShipModel {
 
-  private val emptyHull : Hull = Hull("", "", "", None, Seq(), "", "", Seq() )
+  private val emptyHull : Hull = Hull("", "", "", "", "", None, Seq(), "", "", Seq() )
   private val emptyShip : Ship = Ship("", "", None, None, "", Seq() )
 
-  val empty = apply(null, emptyHull, emptyShip, false)
+  val empty = apply(null, emptyHull, emptyShip)
 
-  def apply( dataModel : DataModel, hull: Hull, ship : Ship, usePower: Boolean ) : ShipModel = {
+  def apply( dataModel : DataModel, hull: Hull, ship : Ship ) : ShipModel = {
 
     val hullSlots = hull.moduleSlotList.map( slot => (slot.pos, slot)).toMap
     val shipModules = ship.moduleSlotList.map( slot => (slot.pos, slot)).toMap
@@ -46,14 +46,14 @@ object ShipModel {
     new ShipModel( hull, ship, ship.combatState.getOrElse("AttackRuns"), minSlots ).computePowerGrid
   }
 
-  def apply( dataModel: DataModel, hull: Hull, usePower: Boolean ) : ShipModel = {
+  def apply( dataModel: DataModel, hull: Hull ) : ShipModel = {
     val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f, None))
-    val ship = Ship("New " + hull.name, hull.role, None, None, "", shipModules)
-    apply( dataModel, hull, ship, usePower )
+    val ship = Ship("New " + hull.name, hull.role, None, None, hull.race + "/" + hull.hullId, shipModules)
+    apply( dataModel, hull, ship )
   }
 }
 
-class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, private val slots: Map[Point, ModelSlot]) {
+class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val slots: Map[Point, ModelSlot]) {
   val (width, height) = if (slots.isEmpty) (0, 0)
                         else {
                           val width = slots.keys.maxBy(_.x).x
@@ -170,6 +170,8 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, privat
 
   def withCombatState( cs: String ) = copy( combatState = cs )
 
+  def withName( name: String ) = copy( ship = ship.copy( name = name ) )
+  
   private def computePowerGrid : ShipModel = {
     val dePowered = slots.mapValues(_.copy(power = false))
 

@@ -121,7 +121,7 @@ object Module {
     return HashMap(allModules.seq:_*)
   }
 
-  val dummy = new ShipModule(0, 0, "", 1, 1, "", "", "", 0.0f, 0, 0, 0,
+  val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", "", "", 0.0f, 0, 0, 0,
       None, None, None, None, None, None, None, None)
 
   def main(args: Array[String]) {

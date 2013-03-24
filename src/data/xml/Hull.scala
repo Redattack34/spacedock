@@ -35,11 +35,11 @@ object Hull {
     scale <- thrusterZone \ 'scale \ text
   } yield ThrusterZone( pos, scale.toInt )
 
-  case class Hull( name: String, role: String, iconPath: String,
+  case class Hull( name: String, hullId: String, role: String, race: String, iconPath: String,
       selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
       defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
 
-  private def hulls(e : Elem) : Seq[Hull] = for {
+  def hulls(race: String, hullId: String, e : Elem) : Seq[Hull] = for {
     name <- e \ 'Name \ text
     role <- e \ 'Role \ text
     iconPath <- e \ 'IconPath \ text
@@ -49,14 +49,14 @@ object Hull {
     defaultAIState <- e \ 'DefaultAIState \ text
     moduleSlotList <- e \ 'ModuleSlotList
     moduleSlots = slots(moduleSlotList)
-  } yield Hull( name, role, iconPath, selectionGraphic.headOption, allThrusters,
+  } yield Hull( name, hullId, role, race, iconPath, selectionGraphic.headOption, allThrusters,
       modelPath, defaultAIState, moduleSlots)
 
   private def raceHulls( dir: File ) : Map[String, Hull] = {
     val raceHulls = for {
       file <- dir.listFiles().par
       xml = XML.fromInputStream(XmlUtils.read(file))
-      hull <- hulls(xml)
+      hull <- hulls(dir.getName, file.getName.replace(".xml", ""), xml)
     } yield (hull.name, hull)
     HashMap(raceHulls.seq:_*)
   }
@@ -75,7 +75,7 @@ object Hull {
       dir <- f.listFiles()
       file <- dir.listFiles()
       xml = XML.fromInputStream(XmlUtils.read(file))
-      hull = hulls(xml)
+      hull = hulls(dir.getName, file.getName.replace(".xml", ""), xml)
     } yield (file.getName, hull.headOption)
 
     allHulls.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))

@@ -52,6 +52,7 @@ object Spacedock extends SimpleSwingApplication {
   shipEditor.listenTo(modules)
 
   modules.listenTo(shipEditor)
+  sdMenuBar.listenTo(shipEditor)
 
   shipStats.listenTo(shipEditor)
 
@@ -77,12 +78,13 @@ object Spacedock extends SimpleSwingApplication {
     rightComponent = toolPaneTop
   }
 
-  def top = new MainFrame {
+  val top = new MainFrame {
     title = "Spacedock"
     menuBar = sdMenuBar
     contents = mainSplit
+    maximize
   }
-
+  
   def isValidInstallDir( f: File ) =
     f != null && f.exists() && f.list.contains("Content")
 
@@ -125,8 +127,6 @@ object Spacedock extends SimpleSwingApplication {
         System.exit(0)
       }
     }
-
-    println();
 
     var userDir = defaultUserDir
     while ( !isValidUserDir(userDir) ) {

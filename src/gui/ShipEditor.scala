@@ -20,9 +20,11 @@ import gui.MouseClickWrapper.click2wrapper
 import scala.swing.event.MouseReleased
 import scala.swing.event.MouseDragged
 import javax.swing.JOptionPane
+import data.xml.Ship.Ship
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
+case class ShipSaved( ship: Ship ) extends Event
 class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
   type AwtPoint = java.awt.Point;
@@ -122,11 +124,20 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   listenTo(mouse.clicks)
 
   reactions += {
-    case HullSelected( newHull ) => shipModel = ShipModel( dataModel, newHull, false)
-    case ShipSelected( newShip, newHull ) => shipModel = ShipModel( dataModel, newHull, newShip, false)
+    case HullSelected( newHull ) => shipModel = ShipModel( dataModel, newHull )
+    case ShipSelected( newShip, newHull ) => shipModel = ShipModel( dataModel, newHull, newShip )
     case ZoomSet( newZoom ) => this.zoom = newZoom
     case FiringArcsSet( newShow ) => this.showArcs = newShow
     case ModuleSelected(mod: ShipModule) => this.mode = PlacementMode(mod)
+    case SaveShip => {
+      val name = JOptionPane.showInputDialog(this.peer, "Name:",
+          "Save Ship", JOptionPane.QUESTION_MESSAGE)
+      if ( name != null ) {
+        shipModel = shipModel.withName(name)
+        val saved = dataModel.save(shipModel)
+        publish(ShipSaved(saved))
+      }
+    }
 
     case MouseMoved(comp, loc, _) if comp == this => mouseOver = Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
     case MouseDragged(comp, loc, _) if comp == this => {
