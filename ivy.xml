@@ -9,6 +9,8 @@
 	
 	<dependencies>
 	   <dependency name="guava" org="com.google.guava" rev="14.0"/>
-	   <dependency name="anti-xml_2.9.1" org="com.codecommit" rev="0.3"/>
+	   <dependency name="anti-xml_2.9.1" org="com.codecommit" rev="0.3">
+	     <exclude module="scala-library"/>
+	   </dependency>
 	</dependencies>
 </ivy-module>

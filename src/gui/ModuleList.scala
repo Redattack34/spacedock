@@ -20,7 +20,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
 
   import model._
 
-  private class ModuleNode(val mod: ShipModule) extends DefaultMutableTreeNode(tokens(mod.nameIndex)) {
+  private class ModuleNode(val mod: ShipModule) extends DefaultMutableTreeNode(token(mod.nameIndex)) {
 
   }
 
@@ -41,14 +41,14 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
   root.add(special)
 
   val weaponTypeNodes =
-    weapons.values
-      .map(_.weaponType).toSet.+("Bomb")
+    weaponTypes
+      .+("Bomb")
       .map((str : String) => ((str, new Node(str))))
     .toMap
   weaponTypeNodes.values.foreach(weapon.add(_))
 
   val moduleTypeNodes =
-    modules.values
+    shipModules
       .filter(_.weaponData.isEmpty)
       .map(_.moduleType)
       .toSet
@@ -79,14 +79,14 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
   private def assignAsWeapon( mod: ShipModule ) : Unit = {
     val weaponType = mod.weaponData.get.weaponType
     val trimmedWeaponType = weaponType.replaceFirst("Dual", "")
-    val weapon = weapons(trimmedWeaponType)
+    val weapon = model.weapon(trimmedWeaponType)
     weaponTypeNodes(weapon.weaponType).add(toNode(mod))
   }
 
   private def assignAsModule( mod: ShipModule ) : Unit =
     moduleTypeNodes(mod.moduleType).add(toNode(mod))
 
-  modules.values.toSeq.sortBy( mod => tokens(mod.nameIndex) ).foreach(assign(_))
+  shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
 
   val tree = new JTree(root)
   tree.setRootVisible(false)

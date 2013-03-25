@@ -82,10 +82,10 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
 
   reactions += {
     case ModuleSelected(mod) => {
-      moduleName.text = tokens(mod.nameIndex)
-      description.text = "<html>" + tokens(mod.descriptionIndex) + "</html>"
+      moduleName.text = token(mod.nameIndex)
+      description.text = "<html>" + token(mod.descriptionIndex) + "</html>"
       restrictions.text = "Restrictions: " + restrictionsString(mod)
-      image.icon = moduleImages(mod.iconTexturePath)
+      image.icon = moduleImage(mod)
       itemSize.text = "Size: " + mod.xSize + "x" + mod.ySize
       mass.text = "Mass: " + mod.mass
       cost.text = "Cost: " + mod.cost
@@ -137,7 +137,7 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
         cargoCapacity.text = "Cargo Capacity: " + cap
       }
 
-      showIf(mod.weaponData.flatMap(weap => weapons.get(weap.weaponType))
+      showIf(mod.weaponData.map(weap => weapon(weap.weaponType))
            )( weaponRange, weaponFireDelay ) { stat =>
 
            showIf( stat.projectileCount )( weaponProjectileCount ) { data =>

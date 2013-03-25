@@ -14,7 +14,7 @@ case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boole
 object ShipModel {
 
   private val emptyHull : Hull = Hull("", "", "", "", "", None, Seq(), "", "", Seq() )
-  private val emptyShip : Ship = Ship("", "", None, None, "", Seq() )
+  private val emptyShip : Ship = Ship("", "", None, None, "", "", Seq() )
 
   val empty = apply(null, emptyHull, emptyShip)
 
@@ -25,7 +25,7 @@ object ShipModel {
     val modelSlots = hullSlots.mapValues{ slot =>
       val shipSlot = shipModules.get(slot.pos)
       val module = shipSlot.map(_.installed) match {
-        case Some(x) if x != "Dummy" => dataModel.modules(x)
+        case Some(x) if x != "Dummy" => dataModel.module(x)
         case _ => dummy
       }
 
@@ -48,7 +48,7 @@ object ShipModel {
 
   def apply( dataModel: DataModel, hull: Hull ) : ShipModel = {
     val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f, None))
-    val ship = Ship("New " + hull.name, hull.role, None, None, hull.race + "/" + hull.hullId, shipModules)
+    val ship = Ship("New " + hull.name, hull.role, None, None, hull.race, hull.hullId, shipModules)
     apply( dataModel, hull, ship )
   }
 }

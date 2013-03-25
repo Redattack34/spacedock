@@ -259,7 +259,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     val Point(x, y) = p
     val rect = getRect(x, y, mod.xSize, mod.ySize)
 
-    g2.drawImage(dataModel.moduleImages(mod.iconTexturePath).getImage,
+    g2.drawImage(dataModel.moduleImage(mod).getImage,
         rect.x, rect.y, rect.width, rect.height, null)
   }
 

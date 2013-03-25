@@ -27,7 +27,7 @@ case object SaveShip extends Event
 
 class SpacedockMenu( data: DataModel ) extends MenuBar {
 
-  case class HullMenuItem(val hull: Hull, str: String) extends MenuItem(str)
+  case class HullMenuItem(val hull: Hull) extends MenuItem("New " + hull.name)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
   case object ZoomMenuItem extends CheckBox("Zoom  ")
   case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs  ")
@@ -42,85 +42,62 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   this.contents += fileMenu
   
   val attackRuns = new RadioButton("Attack Runs  ")
-  attackRuns.tooltip = data.tokens(200)
+  attackRuns.tooltip = data.token(200)
 
   val artillery = new RadioButton("Artillery  ")
-  artillery.tooltip = data.tokens(201)
+  artillery.tooltip = data.token(201)
 
   val holdPosition = new RadioButton("Hold Position  ")
-  holdPosition.tooltip = data.tokens(263)
+  holdPosition.tooltip = data.token(263)
 
   val orbitPort = new RadioButton("Orbit Port  ")
-  orbitPort.tooltip = data.tokens(202)
+  orbitPort.tooltip = data.token(202)
 
   val orbitStarboard = new RadioButton("Orbit Starboard  ")
-  orbitStarboard.tooltip = data.tokens(203)
+  orbitStarboard.tooltip = data.token(203)
 
   val evade = new RadioButton("Evade")
-  evade.tooltip = data.tokens(205)
+  evade.tooltip = data.token(205)
 
   val group = new ButtonGroup( artillery, attackRuns, holdPosition,
       orbitPort, orbitStarboard, evade );
 
-  val loadHull = new Menu("Load Hull")
-  contents += loadHull
+  
+  val shipsMenu = new Menu("Ships")
+  contents += shipsMenu
+  
+  var hullMenuItems = Map[String, Menu]()
 
-  var shipMap = Map[String, Menu]()
-
-  def addRaceHulls( race: String, raceMenu: Menu ) = {
-    val hulls = data.hullsByRace(race).toSeq.sortBy(_._1)
-    hulls.foreach { tuple =>
-      val hull = new HullMenuItem( tuple._2, tuple._1)
-      listenTo(hull)
-      raceMenu.contents += hull
+  loadMenus
+  def loadMenus = {
+    for {
+      race <- data.races
+    } {
+      val raceMenu = new Menu(race + "...")
+      shipsMenu.contents += raceMenu
+    
+      for {
+        hull <- data.hulls(race)
+      } {
+        val hullMenu = new Menu(hull.name + "...")
+        raceMenu.contents += hullMenu
+        hullMenuItems += (hull.name -> hullMenu)
+      
+        for {
+          ship <- data.ships(race, hull.hullId)
+        } {
+          val shipMenuItem = new ShipMenuItem(ship, hull)
+          hullMenu.contents += shipMenuItem
+          listenTo(shipMenuItem)
+        }
+      
+        val hullItem = new HullMenuItem(hull)
+        listenTo(hullItem)
+        hullMenu.contents += hullItem 
+      }
     }
   }
-
-  def addHulls = {
-    val races = data.hullsByRace.keys.toSeq.sortBy(identity)
-    races.foreach { race =>
-      val raceMenu = new Menu(race)
-      loadHull.contents += raceMenu
-      addRaceHulls( race, raceMenu )
-    }
-  }
-
-  addHulls
-
-  val loadShip = new Menu("Load Ship")
-  contents += loadShip
-
-  def addHullShips( race: String, hull: Hull, hullMenu : Menu ) = {
-    val hullId = race + "/" + hull.name
-    val ships = data.shipDesigns.values.filter(_.hull == hullId).toSeq.sortBy(_.name)
-    ships.foreach { ship =>
-      val menuItem = ShipMenuItem( ship, hull )
-      hullMenu.contents += menuItem
-      listenTo(menuItem)
-    }
-  }
-
-  def addRaceShips( race: String, raceMenu: Menu ) = {
-    val hulls = data.hullsByRace(race).toSeq.sortBy(_._1)
-    hulls.foreach { tuple =>
-      val menu = new Menu( tuple._1 )
-      shipMap += (tuple._1 -> menu)
-      addHullShips( race, tuple._2, menu )
-      raceMenu.contents += menu
-    }
-  }
-
-  def addShips = {
-    val races = data.hullsByRace.keys.toSeq.sortBy(identity)
-    races.foreach { race =>
-      val raceMenu = new Menu(race)
-      loadShip.contents += raceMenu
-      addRaceShips( race, raceMenu )
-    }
-  }
-
-  addShips
-
+  
   listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, ExitItem)
 
   contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, attackRuns,
@@ -135,12 +112,10 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     }
     else {
       val ship = shipOpt.get
-      val split = ship.hull.split("/")
-      val race = split(0)
-      val hullName = split(1)
-      val hull = data.hullsByRace(race)(hullName)
+      val hull = data.hullForShip(ship)
       val menuItem = new ShipMenuItem(ship, hull)
-      shipMap(hullName).contents += menuItem
+      val menu = hullMenuItems(hull.name)
+      menu.contents.insert(menu.peer.getMenuComponentCount() - 1, menuItem)
       listenTo(menuItem)
       publish(ShipSelected(ship, hull))
     }
@@ -148,7 +123,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       
   reactions += {
     case ShipSaved(ship) => shipLoaded(Some(ship))
-    case ButtonClicked(HullMenuItem(hull, _)) => publish( HullSelected(hull) )
+    case ButtonClicked(HullMenuItem(hull)) => publish( HullSelected(hull) )
     case ButtonClicked(ShipMenuItem(ship, hull)) => {
       publish( ShipSelected(ship, hull))
       ship.combatState match {

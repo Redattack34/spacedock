@@ -19,12 +19,12 @@ import gui.ShipModel
 
 class DataModel(install: File, user: File) {
 
-  val hullsByRace : Map[String, Map[String, Hull]] = time( "Hulls", loadHulls(install) )
-  val tokens : Map[Int, String] = time( "Tokens", loadTokens( new File(install.getAbsolutePath() + "/Content/Localization/English.xml")) )
-  val weapons : Map[String, Weapon] = time( "Weapons", loadWeapons(install) )
-  val modules : Map[String, ShipModule] = time( "Modules", loadModules(install).filterNot(_._1 == "Dummy") )
-  val moduleImages : Map[String, ImageIcon] = time( "Textures", loadModuleTextures)
-  var shipDesigns : Map[String, Ship] = time( "Ships", loadShips(install, user))
+  private val hullsByRace : Map[String, Map[String, Hull]] = time( "Hulls", loadHulls(install) )
+  private val tokens : Map[Int, String] = time( "Tokens", loadTokens( new File(install.getAbsolutePath() + "/Content/Localization/English.xml")) )
+  private val weapons : Map[String, Weapon] = time( "Weapons", loadWeapons(install) )
+  private val modules : Map[String, ShipModule] = time( "Modules", loadModules(install).filterNot(_._1 == "Dummy") )
+  private val moduleImages : Map[String, ImageIcon] = time( "Textures", loadModuleTextures)
+  private var shipDesigns : Map[String, Ship] = time( "Ships", loadShips(install, user))
 
   val lightningBolt : ImageIcon = loadTexture( new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
 
@@ -38,6 +38,26 @@ class DataModel(install: File, user: File) {
       case Right(im) => Some(new ImageIcon(im))
     }
   }
+  
+  def races = shipDesigns.map(_._2.race).toSet.toSeq.sorted
+  
+  def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
+  
+  def ships(race: String, hull: String) = shipDesigns.values
+      .filter(_.race == race)
+      .filter(_.hull == hull)
+      
+  def hullForShip(s: Ship) = hullsByRace(s.race)(s.hull)
+  
+  def token(id: Int) = tokens(id)
+  
+  def weapon(weaponId: String) = weapons(weaponId)
+  def weaponTypes = weapons.values.map(_.weaponType).toSet
+  
+  def module( moduleId: String ) = modules(moduleId)
+  def shipModules = modules.values
+  
+  def moduleImage( mod: ShipModule) = moduleImages(mod.iconTexturePath)
   
   def loadShipFromFile( f: File ) : Option[Ship] = {
     val tupleOpt = loadShipsFromFile(f)

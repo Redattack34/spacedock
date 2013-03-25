@@ -39,7 +39,7 @@ object Ship {
       slotOptions.headOption.filter(_ != "NotApplicable"))
 
   case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
-    hull: String, moduleSlotList: Seq[ShipModuleSlot])
+    race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot])
 
   private def ships(e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
@@ -49,8 +49,11 @@ object Ship {
     hull <- e \ 'Hull \ text
     moduleList <- e \ 'ModuleSlotList
     modules = slots(moduleList)
+    split = hull.split('/')
+    race = split(0)
+    hullId = split(1)
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
-      hull, modules)
+      race, hullId, modules)
 
   def loadShips( install: File, user: File ) : Map[String, Ship] = {
     val shipsDirs = Seq(
@@ -139,7 +142,7 @@ object Ship {
           getTextNode('IconPath, hull.iconPath),
           getTextNode('CombatState, combatState),
           getTextNode('MechanicalBoardingDefense, 0),
-          getTextNode('Hull, ship.hull),
+          getTextNode('Hull, ship.race + "/" + ship.hull),
           getTextNode('Role, hull.role),
           getThrusterList(hull),
           getTextNode('ModelPath, hull.modelPath),

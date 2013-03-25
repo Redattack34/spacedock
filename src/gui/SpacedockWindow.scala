@@ -94,7 +94,7 @@ object Spacedock extends SimpleSwingApplication {
   def defaultInstallDir : File = {
     val config = new File("config")
     val dir = if ( !config.exists() || !config.canRead() )
-                 "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive"
+                 "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDriver"
               else {
                   val source = Source.fromFile(config)
                   source.getLines.toSeq.head
@@ -105,7 +105,7 @@ object Spacedock extends SimpleSwingApplication {
   def defaultUserDir : File = {
     val config = new File("config")
     val dir = if ( !config.exists() || !config.canRead() )
-                 System.getProperty("user.home") + "/AppData/Roaming/StarDrive"
+                 System.getProperty("user.home") + "/AppData/Roaming/StarDriver"
               else {
                   val source = Source.fromFile(config)
                   source.getLines.toSeq.apply(1)
