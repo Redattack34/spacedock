@@ -55,7 +55,7 @@ object Ship {
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
       race, hullId, modules)
 
-  def loadShips( install: File, user: File ) : Map[String, Ship] = {
+  def loadShips( install: File, user: File ) : Seq[(File, Option[Ship])] = {
     val shipsDirs = Seq(
           new File(install.getAbsolutePath() + "/Content/StarterShips"),
           new File(user.getAbsolutePath() + "/Saved Designs"),
@@ -65,9 +65,9 @@ object Ship {
       shipsDir <- shipsDirs
       file <- shipsDir.listFiles().par
       xml = XML.fromInputStream(XmlUtils.read(file))
-      ship <- ships(xml)
-    } yield (ship.name, ship)
-    HashMap(allShips.seq:_*)
+      ship = ships(xml)
+    } yield (file, ship.headOption)
+    allShips.seq
   }
 
   def loadShipsFromFile( f: File ) : Option[(String, Ship)] = {

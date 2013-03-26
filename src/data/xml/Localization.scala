@@ -17,7 +17,7 @@ object Localization {
 
   def loadTokens( f: File ) : Map[Int, String] = {
     val allTokens = tokens(XML.fromInputStream(XmlUtils.read(f))).map( token => (token.index, token.text))
-    HashMap[Int, String](allTokens:_*)
+    allTokens.toMap
   }
 
   def main(args: Array[String]) {

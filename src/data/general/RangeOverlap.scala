@@ -4,7 +4,7 @@ object RangeOverlap {
 
   class RangeOverlap( r1 : Range )  {
     def overlapsWith (r2: Range) : Boolean = {
-      r1.find( (n : Int) => r2.contains(n) ).isDefined
+      r1.exists( (n : Int) => r2.contains(n) )
     }
   }
 

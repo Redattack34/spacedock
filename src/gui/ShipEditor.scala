@@ -212,7 +212,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
      for {
        (p, module) <- shipModel.allModules.view
        if ( module.powerDraw > 0)
-       if ( shipModel.pointsCoveredByModule(p).find(shipModel.hasPower).isEmpty )
+       if ( !shipModel.pointsCoveredByModule(p).exists(shipModel.hasPower) )
      } drawLightningBolt( g2, p, module )
 
      if ( showArcs ) {

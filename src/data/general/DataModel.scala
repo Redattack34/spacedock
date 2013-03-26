@@ -19,12 +19,17 @@ import gui.ShipModel
 
 class DataModel(install: File, user: File) {
 
-  private val hullsByRace : Map[String, Map[String, Hull]] = time( "Hulls", loadHulls(install) )
-  private val tokens : Map[Int, String] = time( "Tokens", loadTokens( new File(install.getAbsolutePath() + "/Content/Localization/English.xml")) )
-  private val weapons : Map[String, Weapon] = time( "Weapons", loadWeapons(install) )
-  private val modules : Map[String, ShipModule] = time( "Modules", loadModules(install).filterNot(_._1 == "Dummy") )
-  private val moduleImages : Map[String, ImageIcon] = time( "Textures", loadModuleTextures)
-  private var shipDesigns : Map[String, Ship] = time( "Ships", loadShips(install, user))
+  private val englishFile = new File(install.getAbsolutePath() + "/Content/Localization/English.xml")
+  
+  private val hullsByRace : Map[String, Map[String, Hull]] = {
+    val loadedHulls = showErrors( loadHulls(install) )
+    loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
+  }
+  private val tokens : Map[Int, String] = loadTokens(englishFile)
+  private val weapons : Map[String, Weapon] = showErrors(loadWeapons(install)).map( weap => (weap.name, weap)).toMap
+  private val modules : Map[String, ShipModule] = showErrors(loadModules(install)).map( mod => (mod.uid, mod)).toMap
+  private val moduleImages : Map[String, ImageIcon] = loadModuleTextures
+  private var shipDesigns : Map[String, Ship] = showErrors(loadShips(install, user)).map( ship => (ship.name, ship)).toMap
 
   val lightningBolt : ImageIcon = loadTexture( new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
 
@@ -90,6 +95,18 @@ class DataModel(install: File, user: File) {
     saved._2
   }
 
+  private def showErrors[T]( values: Seq[(File, Option[T])]) : Seq[T] = {
+    val failures = values.filter(_._2.isEmpty)
+    
+    if ( !failures.isEmpty ) {
+      val errorString = failures.map(_._1).mkString("\n")
+      JOptionPane.showMessageDialog(null, "Failed to read files: \n" + errorString,
+          "Spacedock Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    values.collect{ case (_, Some(t)) => t }
+  }
+  
   private def time[T]( str: String, f: => T ) : T = {
     val watch = new Stopwatch
     watch.start

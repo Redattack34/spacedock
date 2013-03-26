@@ -111,14 +111,14 @@ object Module {
         weaponData.headOption, engineData.headOption, hangarData.headOption )
 
 
-  def loadModules( base: File ) : Map[String, ShipModule] = {
+  def loadModules( base: File ) : Seq[(File, Option[ShipModule])] = {
     val modulesDir = new File(base.getAbsolutePath() + "/Content/ShipModules")
     val allModules = for {
-        file <- modulesDir.listFiles().par
+        file <- modulesDir.listFiles().toSeq.par
         xml = XML.fromInputStream(XmlUtils.read(file))
-        module <- modules(xml)
-    } yield (module.uid, module )
-    return HashMap(allModules.seq:_*)
+        module = modules(xml)
+    } yield (file, module.headOption)
+    allModules.seq
   }
 
   val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", "", "", 0.0f, 0, 0, 0,
@@ -133,5 +133,6 @@ object Module {
     } yield (file.getName, module.headOption)
 
     allModules.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
+    allModules.filter(_._1 == "Dummy").foreach(println)
   }
 }

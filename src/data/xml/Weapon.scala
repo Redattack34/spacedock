@@ -32,14 +32,14 @@ object Weapon {
       ordnance.headOption.map(_.toFloat),
       shotPower.headOption.map(_.toInt) )
 
-  def loadWeapons( base: File ) : Map[String, Weapon] = {
+  def loadWeapons( base: File ) : Seq[(File, Option[Weapon])] = {
     val weaponsDir = new File(base.getAbsolutePath() + "/Content/Weapons")
     val allWeapons = for {
-      file <- weaponsDir.listFiles().par
+      file <- weaponsDir.listFiles().toSeq.par
       xml = XML.fromInputStream(XmlUtils.read(file))
-      weapon <- weapons(xml)
-    } yield (weapon.name, weapon )
-    return HashMap(allWeapons.seq:_*)
+      weapon = weapons(xml)
+    } yield (file, weapon.headOption)
+    allWeapons.seq
   }
 
   def main(args: Array[String]) {

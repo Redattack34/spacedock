@@ -171,37 +171,38 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
   def withCombatState( cs: String ) = copy( combatState = cs )
   def withName( name: String ) = copy( ship = ship.copy( name = name ) )
   
-  def calculateCost = allModules.values.map(_.cost).sum
-  def calculatePowerCapacity = allModules.values
-      .filter(_.powerPlantData.isDefined)
-      .map(_.powerPlantData.get.powerStoreMax)
+  val cost = allModules.values.map(_.cost).sum
+  val powerCapacity = allModules.values
+      .flatMap(_.powerPlantData)
+      .map(_.powerStoreMax)
       .sum
-  def calculateRecharge = {
-    val modules = allModules.values
-    val powerGeneration = modules.filter(_.powerPlantData.isDefined).map(_.powerPlantData.get.powerFlowMax).sum
-    val powerUse = modules.map(_.powerDraw).sum
-    powerGeneration - powerUse
-  }
-  def calculateRechargeAtWarp = "???"
-  def calculateHitpoints = allModules.values.map(_.health).sum
-  def calculateShieldPower = allModules.values
-      .filter(_.shieldData.isDefined)
-      .map(_.shieldData.get.shieldPower)
+  val totalPowerGeneration = allModules.values.flatMap(_.powerPlantData).map(_.powerFlowMax).sum
+  val powerUse = allModules.values.map(_.powerDraw).sum
+  val recharge = totalPowerGeneration - powerUse
+  val rechargeAtWarp = totalPowerGeneration - (2 * powerUse)
+  val hitpoints = allModules.values.map(_.health).sum
+  val shieldPower = allModules.values
+      .flatMap(_.shieldData)
+      .map(_.shieldPower)
       .sum
-  def calculateMass = allModules.values.map(_.mass).sum
-  def calculateSublightSpeed = "???"
-  def calculateFtlSpeed = "???"
-  def calculateTurnRate = "???"
-  def calculateOrdnanceCapacity = allModules.values
+  val mass = (allSlots.size / 2) + allModules.values.map(_.mass).sum
+  val engines = allModules.values.flatMap(_.engineData)
+  val sublightThrust = engines.map(_.thrust).sum
+  val warpThrust = engines.map(_.warpThrust).sum
+  val turnThrust = engines.map(_.turnThrust).sum
+  val sublightSpeed = if ( mass == 0 ) 0 else sublightThrust / mass 
+  val ftlSpeed = if ( mass == 0 ) 0 else ( warpThrust / mass ) * 35
+  val turnRate = if ( mass == 0 ) 0 else math.toDegrees(( turnThrust.toDouble / mass ) / 700)
+  val ordnanceCapacity = allModules.values
       .flatMap(_.ordnanceCapacity)
       .sum
-  def calculateCargoSpace = allModules.values
+  val cargoSpace = allModules.values
       .flatMap(_.cargoCapacity)
       .sum
-  def hasCommandModule = allModules.values
-      .find(_.moduleType == "Command")
-      .isDefined
-  def hasEmptySlots = {
+  val hasCommandModule = allModules.values
+      .exists(_.moduleType == "Command")
+      
+  val hasEmptySlots = {
     val slots = mutable.Map[Point, HullModuleSlot](allSlots.toSeq:_*)
 
     allModules.foreach { tuple =>

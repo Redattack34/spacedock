@@ -52,21 +52,18 @@ object Hull {
   } yield Hull( name, hullId, role, race, iconPath, selectionGraphic.headOption, allThrusters,
       modelPath, defaultAIState, moduleSlots)
 
-  private def raceHulls( dir: File ) : Map[String, Hull] = {
+  private def raceHulls( dir: File ) : Seq[(File, Option[Hull])] = {
     val raceHulls = for {
-      file <- dir.listFiles().par
+      file <- dir.listFiles().toSeq.par
       xml = XML.fromInputStream(XmlUtils.read(file))
-      hull <- hulls(dir.getName, file.getName.replace(".xml", ""), xml)
-    } yield (hull.name, hull)
-    HashMap(raceHulls.seq:_*)
+      hull = hulls(dir.getName, file.getName.replace(".xml", ""), xml)
+    } yield (file, hull.headOption)
+    raceHulls.seq
   }
 
-  def loadHulls( base: File ) : Map[String, Map[String, Hull]] = {
+  def loadHulls( base: File ) : Seq[(File, Option[Hull])] = {
     val hullsDir = new File(base.getAbsolutePath() + "/Content/Hulls")
-    val allHulls = for {
-        dir <- hullsDir.listFiles()
-    } yield (dir.getName, raceHulls(dir))
-    HashMap(allHulls:_*)
+    hullsDir.listFiles().flatMap(raceHulls)
   }
 
   def main(args: Array[String]) {
