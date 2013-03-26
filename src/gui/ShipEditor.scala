@@ -21,6 +21,7 @@ import scala.swing.event.MouseReleased
 import scala.swing.event.MouseDragged
 import javax.swing.JOptionPane
 import data.xml.Ship.Ship
+import data.xml.Module.ShieldData
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -49,6 +50,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   private val mouseOverColor = new Color(122, 230, 255)
   private val canNotPlaceColor = new Color(255, 125, 147)
   private val canPlaceColor = new Color(179, 255, 117)
+  private val shieldColor = new Color(0, 200, 255)
 
   def preferredViewportSize: Dimension = this.preferredSize
 
@@ -225,6 +227,17 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
        val (facing, module) = shipModel.allWeapons(p)
        drawFiringArc( g2, p, facing, module )
      }
+     
+     if (showArcs) {
+       for {
+         (p, module) <- shipModel.allModules
+         shield <- module.shieldData
+       } drawShieldRadius( g2, p, module, shield )
+     } 
+     if (mode.isPlacement) {
+       val PlacementMode(module) = mode
+       module.shieldData.foreach(s => drawShieldRadius(g2, mouseOver, module, s))
+     }
 
 /*     if ( midPoint != -1 ) {
        g2.setColor(Color.BLACK)
@@ -263,7 +276,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         rect.x, rect.y, rect.width, rect.height, null)
   }
 
-  private def drawLightningBolt( g2: Graphics2D, p: Point, mod: ShipModule ) : Unit = {
+  private def drawLightningBolt( g2: Graphics2D, p: Point, mod: ShipModule ) {
     val Point(x, y) = p
     val rect = getRect(x, y, mod.xSize, mod.ySize)
 
@@ -275,7 +288,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
     val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
 
-    val r : Double = 100
+    val r : Double = 100 * (zoom / 16)
     val spread = math.toRadians( mod.weaponData.get.fieldOfFire.toDouble / 2 )
     val facingRad = math.toRadians(facing)
 
@@ -290,5 +303,19 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     g2.setStroke(new BasicStroke(3))
     g2.drawLine(baseX.toInt, baseY.toInt, (baseX + arc1X).toInt, (baseY + arc1Y).toInt);
     g2.drawLine(baseX.toInt, baseY.toInt, (baseX + arc2X).toInt, (baseY + arc2Y).toInt);
+  }
+  
+  private def drawShieldRadius( g2: Graphics2D, p: Point, mod: ShipModule, shield: ShieldData ) {
+    val radius = (shield.radius.toDouble / 16) * zoom
+    val diameter = (radius * 2).toInt
+    
+    val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
+    val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
+    
+    val x = baseX - radius
+    val y = baseY - radius
+    
+    g2.setColor(shieldColor)
+    g2.drawOval(x.toInt, y.toInt, diameter, diameter)
   }
 }

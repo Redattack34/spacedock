@@ -30,7 +30,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case class HullMenuItem(val hull: Hull) extends MenuItem("New " + hull.name)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
   case object ZoomMenuItem extends CheckBox("Zoom  ")
-  case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs  ")
+  case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs and Shields  ")
   
   case object LoadShipFromFileItem extends MenuItem("Load From File")
   case object LoadShipFromUrlItem extends MenuItem("Load From URL")
