@@ -200,7 +200,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
       .flatMap(_.cargoCapacity)
       .sum
   val hasCommandModule = allModules.values
-      .exists(_.moduleType == "Command")
+      .exists(mod => mod.uid == "CIC" || mod.uid =="Cockpit" || mod.uid == "Bridge" )
       
   val hasEmptySlots = {
     val slots = mutable.Map[Point, HullModuleSlot](allSlots.toSeq:_*)
