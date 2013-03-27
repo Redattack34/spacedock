@@ -145,16 +145,18 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case MouseDragged(comp, loc, _) if comp == this => {
       if (  mode.isFacing ) {
         val FacingMode(p, mod) = mode
-        val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
-        val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
+        if ( mod.moduleType == "Turret" ) {
+          val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
+          val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
 
-        val diffX = loc.x - baseX
-        val diffY = baseY - loc.y
+          val diffX = loc.x - baseX
+          val diffY = baseY - loc.y
 
-        val angleRad = math.atan2(diffY, diffX)
-        val angleDeg = math.toDegrees(angleRad)
+          val angleRad = math.atan2(diffY, diffX)
+          val angleDeg = math.toDegrees(angleRad)
 
-        shipModel = shipModel.setFacing(p, angleDeg.toFloat)
+          shipModel = shipModel.setFacing(p, angleDeg.toFloat)
+        }
       }
     }
     case cl: MousePressed if cl.isRight => rightClick
@@ -303,6 +305,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     g2.setStroke(new BasicStroke(3))
     g2.drawLine(baseX.toInt, baseY.toInt, (baseX + arc1X).toInt, (baseY + arc1Y).toInt);
     g2.drawLine(baseX.toInt, baseY.toInt, (baseX + arc2X).toInt, (baseY + arc2Y).toInt);
+    g2.drawArc((baseX - r).toInt, (baseY - r).toInt, (2 * r).toInt, (2 * r).toInt,
+        math.toDegrees(facingRad - spread).toInt, math.toDegrees(2 * spread).toInt)
   }
   
   private def drawShieldRadius( g2: Graphics2D, p: Point, mod: ShipModule, shield: ShieldData ) {
