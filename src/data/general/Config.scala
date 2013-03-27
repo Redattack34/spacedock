@@ -6,9 +6,7 @@ import scala.io.Source
 import java.io.PrintStream
 import javax.swing.JFileChooser
 
-object Config extends Reactor {
-
-  
+object Config {
   
   private[this] var _install : File = null
   def install = _install
@@ -22,17 +20,35 @@ object Config extends Reactor {
     _user = file
   }
   
+  private[this] var _mods : Seq[String] = Vector()
+  def mods = _mods
+  private def mods_=(newMods: Seq[String]) = {
+    _mods = newMods
+  }
+  
+  def addMod( name: String ) = {
+    mods = mods ++ Seq(name)
+    write
+  }
+  
+  def clearMods = {
+    mods = Vector()
+    write
+  }
+  
   private[this] val config = new File("config")
   if ( !config.exists() || !config.canRead() ) {
     val (install, user) = getDirectories
     this.install = install
     this.user = user
+    write
   }
   else {
     val source = Source.fromFile(config)
     val lines = source.getLines
     this.install = new File(lines.next)
     this.user = new File(lines.next)
+    this.mods = lines.toSeq
   }
   
   private def isValidInstallDir( f: File ) =
@@ -76,13 +92,16 @@ object Config extends Reactor {
       }
     }
 
+    (installDir, userDir)
+  }
+  
+  private def write = {
     val config = new File("config")
     if ( !config.exists() ) config.createNewFile
     val writer = new PrintStream( config )
-    writer.println(installDir)
-    writer.println(userDir)
+    writer.println(install)
+    writer.println(user)
+    mods.foreach(writer.println)
     writer.close
-
-    (installDir, userDir)
   }
 }
