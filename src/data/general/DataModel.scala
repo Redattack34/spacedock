@@ -17,7 +17,10 @@ import java.net.URL
 import java.util.Arrays
 import gui.ShipModel
 
-class DataModel(install: File, user: File) {
+class DataModel {
+  
+  private val install = Config.install
+  private val user = Config.user
 
   private val englishFile = new File(install.getAbsolutePath() + "/Content/Localization/English.xml")
   

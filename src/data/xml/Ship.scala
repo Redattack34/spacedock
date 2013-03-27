@@ -177,7 +177,7 @@ object Ship {
     val ship = ships( XML.fromInputStream(XmlUtils.read(shipFile))).head
     val hull = Hull.hulls( "Terran", "Broadsword Mk II", XML.fromInputStream(XmlUtils.read(hullFile))).head
         
-    val dataModel = new DataModel( new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive"), null)
+    val dataModel = new DataModel
     val xml = shipToXml(ShipModel(dataModel, hull, ship))
     val test = scala.xml.XML.loadString(xml.toString)
     val printer = new PrettyPrinter(200, 2)
