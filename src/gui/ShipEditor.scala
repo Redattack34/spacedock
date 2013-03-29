@@ -14,14 +14,14 @@ import scala.swing.event.MouseMoved
 import scala.swing.event.MousePressed
 import data.general.DataModel
 import data.general.Point
-import data.xml.Hull.HullModuleSlot
-import data.xml.Module.ShipModule
 import gui.MouseClickWrapper.click2wrapper
 import scala.swing.event.MouseReleased
 import scala.swing.event.MouseDragged
 import javax.swing.JOptionPane
-import data.xml.Ship.Ship
-import data.xml.Module.ShieldData
+import data.xml.ShipModule
+import data.xml.Ship
+import data.xml.ShieldData
+import data.xml.HullModuleSlot
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event

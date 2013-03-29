@@ -1,9 +1,10 @@
 package data.general
 
-import scala.swing.Reactor
 import java.io.File
-import scala.io.Source
 import java.io.PrintStream
+
+import scala.io.Source
+
 import javax.swing.JFileChooser
 
 object Config {

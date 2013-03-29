@@ -1,12 +1,16 @@
 package data.xml
 
-import com.codecommit.antixml._
-import com.codecommit.antixml.XML
 import java.io.File
-import scala.collection.immutable.HashMap
+
+import scala.Array.canBuildFrom
+
+import com.codecommit.antixml.Elem
+import com.codecommit.antixml.Selector.symbolToSelector
+import com.codecommit.antixml.XML
+import com.codecommit.antixml.text
 
 object Localization {
-  case class Token( index: Int, text: String )
+  private case class Token( index: Int, text: String )
 
   private def tokens(e: Elem) : Seq[Token] = for {
     tokenList <- e \ 'TokenList

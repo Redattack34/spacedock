@@ -1,7 +1,8 @@
 package data.xnb
 
-import com.google.common.base.Charsets
 import java.io.InputStream
+
+import com.google.common.base.Charsets
 
 object InputStreamUtils {
   def readInt(is: InputStream) : Int = {

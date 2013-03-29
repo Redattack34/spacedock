@@ -2,19 +2,17 @@ package gui
 
 import scala.swing.BorderPanel
 import scala.swing.Component
-import scala.swing.Panel
-import scala.swing.Publisher
 import scala.swing.ScrollPane
 import scala.swing.event.Event
+
 import data.general.DataModel
-import data.xml.Module.ShipModule
+import data.xml.ShipModule
 import javax.swing.JTree
 import javax.swing.event.TreeSelectionEvent
 import javax.swing.event.TreeSelectionListener
 import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.TreeNode
-import javax.swing.tree.TreeSelectionModel
 import javax.swing.tree.TreePath
+import javax.swing.tree.TreeSelectionModel
 
 class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListener {
 

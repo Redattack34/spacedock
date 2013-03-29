@@ -1,17 +1,21 @@
 package data.xml
 
-import com.codecommit.antixml._
-import com.codecommit.antixml.XML
 import java.io.File
-import scala.collection.immutable.HashMap
+
+import scala.Array.canBuildFrom
+
+import com.codecommit.antixml.Elem
+import com.codecommit.antixml.Selector.symbolToSelector
+import com.codecommit.antixml.XML
+import com.codecommit.antixml.text
+
+case class Weapon( name: String, weaponType: String, range: Int,
+		fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
+		beamPowerPerSec: Option[Int],
+		ordnancePerShot: Option[Float],
+		powerPerShot: Option[Int])
 
 object Weapon {
-
-  case class Weapon( name: String, weaponType: String, range: Int,
-      fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
-      beamPowerPerSec: Option[Int],
-      ordnancePerShot: Option[Float],
-      powerPerShot: Option[Int])
 
   private def weapons(e : Elem) : Seq[Weapon] = for {
     name <- e \ 'UID \ text

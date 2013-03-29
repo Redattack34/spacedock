@@ -1,19 +1,26 @@
 package data.xml
 
 import java.io.File
+
+import scala.Array.canBuildFrom
+import scala.Array.fallbackCanBuildFrom
+
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
-import scala.collection.immutable.HashMap
-import data.xml.Position._
+
+import data.xml.Position.positions
+
+case class HullModuleSlot( pos: Position, restrictions: String,
+		slotOptions: Option[String], shieldPower: Option[Int], facing: Option[Float] )
+case class ThrusterZone(pos: Position, scale: Int)
+
+case class Hull( name: String, hullId: String, role: String, race: String, iconPath: String,
+		selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
+		defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
 
 object Hull {
-
-
-
-  case class HullModuleSlot( pos: Position, restrictions: String,
-      slotOptions: Option[String], shieldPower: Option[Int], facing: Option[Float] )
 
   private def slots(e : Elem) : Seq[HullModuleSlot] = for {
     moduleSlot <- e \ 'ModuleSlotData
@@ -26,18 +33,12 @@ object Hull {
       slotOptions.headOption, shieldPower.headOption.map(_.toInt),
       facing.headOption.map(_.toFloat) )
 
-  case class ThrusterZone(pos: Position, scale: Int)
-
   private def thrusters(e : Elem) : Seq[ThrusterZone] = for {
     thrusterList <- e \ 'ThrusterList
     thrusterZone <- thrusterList \ 'ThrusterZone
     pos <- positions( thrusterZone )
     scale <- thrusterZone \ 'scale \ text
   } yield ThrusterZone( pos, scale.toInt )
-
-  case class Hull( name: String, hullId: String, role: String, race: String, iconPath: String,
-      selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
-      defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
 
   def hulls(race: String, hullId: String, e : Elem) : Seq[Hull] = for {
     name <- e \ 'Name \ text

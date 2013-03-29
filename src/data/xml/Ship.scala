@@ -2,11 +2,13 @@ package data.xml
 
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.URL
+
 import scala.Array.canBuildFrom
-import scala.collection.immutable.HashMap
 import scala.xml.PrettyPrinter
+
 import com.codecommit.antixml.Attributes
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Group
@@ -14,20 +16,23 @@ import com.codecommit.antixml.Node
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.Text
 import com.codecommit.antixml.XML
+import com.codecommit.antixml.stringTupleToQNameTuple
 import com.codecommit.antixml.text
 import com.google.common.base.Charsets
+
 import data.general.DataModel
-import data.xml.Hull.Hull
 import data.xml.Position.positions
 import gui.ModelSlot
 import gui.ShipModel
-import java.io.OutputStreamWriter
 
+
+case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
+		slotOptions: Option[String] )
+		
+case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
+		race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot])
 
 object Ship {
-
-  case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
-      slotOptions: Option[String] )
 
   private def slots( e: Elem ) : Seq[ShipModuleSlot] = for {
     moduleSlot <- e \ 'ModuleSlotData
@@ -37,9 +42,6 @@ object Ship {
     slotOptions = moduleSlot \ 'SlotOptions \ text
   } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
       slotOptions.headOption.filter(_ != "NotApplicable"))
-
-  case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
-    race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot])
 
   private def ships(e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text

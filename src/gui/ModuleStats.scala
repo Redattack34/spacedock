@@ -6,9 +6,9 @@ import data.general.DataModel
 import scala.swing.Panel
 import scala.swing.BorderPanel
 import scala.swing.Alignment
-import data.xml.Module.ShipModule
 import scala.swing.BoxPanel
 import scala.swing.Orientation
+import data.xml.ShipModule
 
 class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
 

@@ -1,9 +1,8 @@
 package data.xnb
 
 import java.awt.Image
-import java.io.InputStream
 import java.awt.image.BufferedImage
-import java.awt.image.WritableRaster
+import java.io.InputStream
 
 object ColorReader {
 

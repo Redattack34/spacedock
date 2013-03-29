@@ -1,21 +1,21 @@
 package gui
 
-import scala.swing.CheckMenuItem
+import java.net.URL
+
+import scala.swing.ButtonGroup
+import scala.swing.CheckBox
 import scala.swing.Menu
 import scala.swing.MenuBar
 import scala.swing.MenuItem
+import scala.swing.RadioButton
 import scala.swing.event.ButtonClicked
 import scala.swing.event.Event
+
 import data.general.DataModel
-import data.xml.Hull.Hull
-import data.xml.Ship.Ship
-import scala.swing.CheckBox
-import scala.swing.RadioButton
-import scala.swing.ButtonGroup
-import javax.swing.JOptionPane
-import java.net.URI
-import java.net.URL
+import data.xml.Hull
+import data.xml.Ship
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 
 case class HullSelected( hull: Hull ) extends Event

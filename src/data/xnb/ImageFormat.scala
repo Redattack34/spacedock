@@ -1,8 +1,8 @@
 package data.xnb
 
 import java.awt.Image
-import java.io.InputStream
 import java.io.IOException
+import java.io.InputStream
 
 object ImageFormat {
 

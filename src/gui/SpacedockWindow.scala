@@ -1,25 +1,15 @@
 package gui
 
-import java.io.File
-import scala.swing.CheckMenuItem
 import scala.swing.Component
 import scala.swing.MainFrame
-import scala.swing.Menu
 import scala.swing.MenuBar
-import scala.swing.MenuItem
 import scala.swing.Orientation
-import scala.swing.Panel
 import scala.swing.ScrollPane
 import scala.swing.SimpleSwingApplication
 import scala.swing.SplitPane
+
 import data.general.DataModel
-import data.xml.Hull.Hull
 import javax.swing.UIManager
-import javax.swing.JFileChooser
-import scala.io.Source
-import java.io.FileWriter
-import java.io.BufferedWriter
-import java.io.PrintStream
 
 object Spacedock extends SimpleSwingApplication {
 

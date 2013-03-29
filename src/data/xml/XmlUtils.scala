@@ -1,12 +1,10 @@
 package data.xml
 
-import java.io.PushbackInputStream
-import java.io.InputStream
-import java.io.FileInputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
+import java.io.PushbackInputStream
 import java.net.URL
-import java.io.BufferedInputStream
-import java.nio.ByteBuffer
 
 object XmlUtils {
 

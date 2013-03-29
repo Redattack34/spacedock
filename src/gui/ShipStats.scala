@@ -1,12 +1,10 @@
 package gui
 
+import java.text.DecimalFormat
+
 import scala.swing.BoxPanel
 import scala.swing.Label
 import scala.swing.Orientation
-import scala.collection._
-import data.general.Point
-import data.xml.Hull.HullModuleSlot
-import java.text.DecimalFormat
 
 class ShipStats extends BoxPanel(Orientation.Vertical) {
 

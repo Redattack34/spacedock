@@ -8,6 +8,11 @@ import data.xml.Module._
 import data.general.Point
 import data.general.RangeOverlap._
 import scala.collection._
+import data.xml.Hull
+import data.xml.ShipModule
+import data.xml.Ship
+import data.xml.HullModuleSlot
+import data.xml.ShipModuleSlot
 
 case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boolean, facing: Float, slotOption: Option[String] )
 
