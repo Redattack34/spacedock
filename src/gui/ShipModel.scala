@@ -202,7 +202,11 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
       .flatMap(_.shieldData)
       .map(_.shieldPower)
       .sum
-  val mass = (allSlots.size / 2) + allModules.values.map(_.mass).sum
+  val mass = {
+    val hullMass = (allSlots.size / 2) 
+    val moduleMass = math.max( 0, allModules.values.map(_.mass).sum )
+    hullMass + moduleMass
+  }
   val engines = allModules.values.flatMap(_.engineData)
   val sublightThrust = engines.map(_.thrust).sum
   val warpThrust = engines.map(_.warpThrust).sum
