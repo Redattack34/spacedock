@@ -31,7 +31,8 @@ case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
 		slotOptions: Option[String] )
 		
 case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
-		race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot])
+		race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot], requiredModsList: Seq[String]){
+}
 
 object Ship extends XmlLoader[Ship]{
 
@@ -44,6 +45,14 @@ object Ship extends XmlLoader[Ship]{
   } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
       slotOptions.headOption.filter(_ != "NotApplicable"))
 
+  private def mods( e: Elem ) : Seq[String] = for {
+    modList <- e \ 'RequiredModList
+    mod <- modList \ 'Mod \ text
+  } yield {
+    println(mod)
+    mod
+  }
+  
   def load(f: Option[File], e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
     role <- e \ 'Role \ text
@@ -52,11 +61,12 @@ object Ship extends XmlLoader[Ship]{
     hull <- e \ 'Hull \ text
     moduleList <- e \ 'ModuleSlotList
     modules = slots(moduleList)
+    requiredMods = mods(e)
     split = hull.split('/')
     race = split(0)
     hullId = split(1)
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
-      race, hullId, modules)
+      race, hullId, modules, requiredMods)
 
   def directory(base: File) = base / 'StarterShips
   
@@ -105,6 +115,11 @@ object Ship extends XmlLoader[Ship]{
     Elem(None, "ModuleSlotList", Attributes.empty, Map(), Group(slotData:_*))
   }
   
+  def getRequiredMods( model: ShipModel ) : Node = {
+    val modData = model.ship.requiredModsList.map(getTextNode('Mod, _))
+    Elem(None, "RequiredModList", Attributes.empty, Map(), Group(modData:_*))
+  }
+  
   private def shipToXml( model: ShipModel ) : Node = {
     val ship = model.ship
     val hull = model.hull
@@ -126,6 +141,7 @@ object Ship extends XmlLoader[Ship]{
           getTextNode('Hull, ship.race + "/" + ship.hull),
           getTextNode('Role, hull.role),
           getThrusterList(hull),
+          getRequiredMods(model),
           getTextNode('ModelPath, hull.modelPath),
           getTextNode('DefaultAIState, hull.defaultAIState),
           getModuleSlotList(model)

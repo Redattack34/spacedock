@@ -19,7 +19,7 @@ case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boole
 object ShipModel {
 
   private val emptyHull : Hull = Hull("", "", "", "", "", None, Seq(), "", "", Seq() )
-  private val emptyShip : Ship = Ship("", "", None, None, "", "", Seq() )
+  private val emptyShip : Ship = Ship("", "", None, None, "", "", Seq(), Seq() )
 
   val empty = apply(null, emptyHull, emptyShip)
 
@@ -53,7 +53,7 @@ object ShipModel {
 
   def apply( dataModel: DataModel, hull: Hull ) : ShipModel = {
     val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f, None))
-    val ship = Ship("New " + hull.name, hull.role, None, None, hull.race, hull.hullId, shipModules)
+    val ship = Ship("New " + hull.name, hull.role, None, None, hull.race, hull.hullId, shipModules, dataModel.loadedMods)
     apply( dataModel, hull, ship )
   }
 }
@@ -180,11 +180,12 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
     if ( !data.races.contains(hull.race)) return ShipModel.empty
     if ( !data.hulls(hull.race).contains(hull) ) return ShipModel.empty
     val allModules = data.modules
-    slots.filter( _._2.module != dummy)
+    val newModel = slots.filter( _._2.module != dummy)
     	 .filter( t => allModules.contains( t._2.module.uid ) )
     	 .foldLeft(ShipModel(data, hull))( (acc, slot) =>
     	   acc.placeModule(slot._1, data.module(slot._2.module.uid))
     	 )
+    newModel.copy( ship = ship.copy( requiredModsList = data.loadedMods))
   }
   
   val cost = allModules.values.map(_.cost).sum

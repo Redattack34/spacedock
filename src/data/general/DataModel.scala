@@ -89,7 +89,8 @@ class DataModel extends Publisher with Reactor {
   def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
   def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _)
   def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
-  def shipDesigns  = allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns
+  def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
+  	.filter(_._2.requiredModsList.forall(loadedMods.contains))
       
   def races = hullsByRace.keys.toSeq.sorted
   
@@ -128,6 +129,7 @@ class DataModel extends Publisher with Reactor {
         .toSeq.sorted.toArray
         
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
+  def loadedMods : Seq[String] = modData.map(_.name)
   
   def save( ship: ShipModel ) : Ship = {
     val saved = Ship.saveShip(ship, user)
