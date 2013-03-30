@@ -2,6 +2,8 @@ package data.xml
 
 import java.io.File
 
+import data.general.FileExtension._
+
 import scala.Array.canBuildFrom
 import scala.Array.fallbackCanBuildFrom
 
@@ -63,7 +65,7 @@ object Hull {
   }
 
   def loadHulls( base: File ) : Seq[(File, Option[Hull])] = {
-    val hullsDir = new File(base.getAbsolutePath() + "/Hulls")
+    val hullsDir : File = base / 'Hulls
     hullsDir.listFiles().flatMap(raceHulls)
   }
 

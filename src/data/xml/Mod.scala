@@ -5,6 +5,7 @@ import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
 import java.io.File
+import data.general.FileExtension._
 
 case class Mod(name: String, desc: String)
 
@@ -16,7 +17,7 @@ object Mod {
   } yield Mod(name, desc)
   
   def loadMods( base: File ) : Seq[(File, Option[Mod])] = {
-    val modsDir = new File(base.getAbsolutePath() + "/Mods")
+    val modsDir : File = base / 'Mods
     val allMods = for {
       file <- modsDir.listFiles().toSeq.par
       if (file.isFile())

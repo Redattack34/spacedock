@@ -23,11 +23,12 @@ import gui.ShipModel
 import javax.swing.ImageIcon
 import javax.swing.JOptionPane
 import data.xml.Mod
+import data.general.FileExtension._
 
 class ModData(dir: File) { 
   import DataModel._
   
-  private val englishFile = new File(dir.getAbsolutePath() + "/Localization/English.xml")
+  private val englishFile = dir / 'Localization / "English.xml"
 	
   val hullsByRace : Map[String, Map[String, Hull]] = {
 	val loadedHulls = showErrors( loadHulls(dir) )
@@ -40,7 +41,7 @@ class ModData(dir: File) {
   val shipDesigns : Map[String, Ship] = showErrors(loadShips(dir)).map( ship => (ship.name, ship)).toMap
   
   private def loadModuleTextures : Map[String, ImageIcon] = {
-    val dir = new File( this.dir.getAbsolutePath() + "/Textures/Modules")
+    val dir = this.dir / 'Textures / 'Modules
     val eithers = for { file <- dir.listFiles().par }
         yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
 
@@ -55,7 +56,7 @@ class DataModel {
   private val install = Config.install
   private val user = Config.user
   
-  private val content = new File( install.getAbsolutePath() + "/Content")
+  private val content = install / 'Content
   val baseGame = new ModData(content)
   
   val allData = Seq(baseGame)
@@ -64,8 +65,7 @@ class DataModel {
   
   var customShipDesigns = showErrors(loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
-  val lightningBolt : ImageIcon = loadTexture( 
-      new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
+  val lightningBolt : ImageIcon = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get
   
   private def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
   private def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)

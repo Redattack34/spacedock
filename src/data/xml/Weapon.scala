@@ -8,6 +8,7 @@ import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
+import data.general.FileExtension._
 
 case class Weapon( name: String, weaponType: String, range: Int,
 		fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
@@ -37,7 +38,7 @@ object Weapon {
       shotPower.headOption.map(_.toInt) )
 
   def loadWeapons( base: File ) : Seq[(File, Option[Weapon])] = {
-    val weaponsDir = new File(base.getAbsolutePath() + "/Weapons")
+    val weaponsDir = base / "Weapons"
     val allWeapons = for {
       file <- weaponsDir.listFiles().toSeq.par
       xml = XML.fromInputStream(XmlUtils.read(file))

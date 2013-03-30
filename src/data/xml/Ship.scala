@@ -21,6 +21,7 @@ import com.codecommit.antixml.text
 import com.google.common.base.Charsets
 
 import data.general.DataModel
+import data.general.FileExtension._
 import data.xml.Position.positions
 import gui.ModelSlot
 import gui.ShipModel
@@ -167,9 +168,9 @@ object Ship {
   
   def saveShip( ship: ShipModel, user: File ) : (String, Ship) = {
     val xml = shipToXml(ship)
-    val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "/WIP/"
-              else "/Saved Designs/"
-    val file = new File( user.getAbsolutePath() + dir + ship.ship.name + ".xml")
+    val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "WIP"
+              else "Saved Designs"
+    val file = user / dir / (ship.ship.name + ".xml")
     val scalaXml = scala.xml.XML.loadString(xml.toString)
     val printer = new PrettyPrinter(200, 2)
     

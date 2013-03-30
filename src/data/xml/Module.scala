@@ -9,6 +9,8 @@ import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
 
+import data.general.FileExtension._
+
 case class ShieldData(shieldPower: Int, rechargeDelay: Float, rechargeRate: Float, radius: Int)
 
 case class PowerPlantData(explodes: Boolean, powerFlowMax: Int, powerStoreMax: Int, powerRadius: Int)
@@ -111,7 +113,7 @@ object Module {
 
 
   def loadModules( base: File ) : Seq[(File, Option[ShipModule])] = {
-    val modulesDir = new File(base.getAbsolutePath() + "/ShipModules")
+    val modulesDir = base / 'ShipModules
     val allModules = for {
         file <- modulesDir.listFiles().toSeq.par
         xml = XML.fromInputStream(XmlUtils.read(file))
