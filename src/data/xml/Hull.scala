@@ -66,7 +66,8 @@ object Hull {
 
   def loadHulls( base: File ) : Seq[(File, Option[Hull])] = {
     val hullsDir : File = base / 'Hulls
-    hullsDir.listFiles().flatMap(raceHulls)
+    if ( !hullsDir.exists() ) Seq()
+    else hullsDir.listFiles().flatMap(raceHulls)
   }
 
   def main(args: Array[String]) {

@@ -30,7 +30,7 @@ case class ShipModule(
 		iconTexturePath: String,
 		
 		//Game stats
-		cost: Float, mass: Int, health: Int, powerDraw: Int, bonusRepair: Option[Int],
+		cost: Float, mass: Float, health: Int, powerDraw: Float, bonusRepair: Option[Int],
 		ordnanceCapacity: Option[Int], cargoCapacity: Option[Int],
 		
 		shieldData: Option[ShieldData],
@@ -103,8 +103,8 @@ object Module {
     } yield ShipModule( name.toInt, description.toInt, uid,
         xSize.headOption.map(_.toInt).getOrElse(1),
         ySize.headOption.map(_.toInt).getOrElse(1), moduleType,
-        restrictions, iconTexturePath, cost.toFloat, mass.toInt, health.toInt,
-        powerDraw.headOption.map(_.toInt).getOrElse(0),
+        restrictions, iconTexturePath, cost.toFloat, mass.toFloat, health.toInt,
+        powerDraw.headOption.map(_.toFloat).getOrElse(0.0f),
         bonusRepair.headOption.map(_.toInt),
         ordnanceCapacity.headOption.map(_.toInt),
         cargoCapacity.headOption.map(_.toInt),
@@ -114,6 +114,9 @@ object Module {
 
   def loadModules( base: File ) : Seq[(File, Option[ShipModule])] = {
     val modulesDir = base / 'ShipModules
+    
+    if ( !modulesDir.exists ) return Seq()
+    
     val allModules = for {
         file <- modulesDir.listFiles().toSeq.par
         xml = XML.fromInputStream(XmlUtils.read(file))

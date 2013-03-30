@@ -59,9 +59,11 @@ class DataModel {
   private val content = install / 'Content
   val baseGame = new ModData(content)
   
-  val allData = Seq(baseGame)
-  
   val allMods : Map[String, Mod] = showErrors(loadMods(install)).map(mod => (mod.name, mod)).toMap
+  
+  val modData = Config.mods.flatMap(mod => allMods.get(mod)).map(mod => install / 'Mods / mod.name).map(new ModData(_))
+  
+  val allData = baseGame +: modData
   
   var customShipDesigns = showErrors(loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 

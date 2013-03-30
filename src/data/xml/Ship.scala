@@ -59,11 +59,11 @@ object Ship {
       race, hullId, modules)
 
   def loadShips( install: File ) : Seq[(File, Option[Ship])] = {
-    val shipsDirs = Seq(
-          new File(install.getAbsolutePath() + "/StarterShips")
-        )
+    val shipsDir = install / 'StarterShips
+    
+    if ( !shipsDir.exists ) return Seq()
+    
     val allShips = for {
-      shipsDir <- shipsDirs
       file <- shipsDir.listFiles().par
       xml = XML.fromInputStream(XmlUtils.read(file))
       ship = ships(xml)
@@ -73,9 +73,10 @@ object Ship {
   
   def loadCustomShips( user: File ) : Seq[(File, Option[Ship])] = {
     val shipsDirs = Seq(
-          new File(user.getAbsolutePath() + "/Saved Designs"),
-          new File(user.getAbsolutePath() + "/WIP")
+          user / "Saved Designs",
+          user / "WIP"
         )
+        
     val allShips = for {
       shipsDir <- shipsDirs
       file <- shipsDir.listFiles().par

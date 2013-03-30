@@ -20,8 +20,11 @@ object Localization {
   } yield Token( index.toInt, string )
 
   def loadTokens( f: File ) : Map[Int, String] = {
-    val allTokens = tokens(XML.fromInputStream(XmlUtils.read(f))).map( token => (token.index, token.text))
-    allTokens.toMap
+    if ( f.exists ) {
+      val allTokens = tokens(XML.fromInputStream(XmlUtils.read(f))).map( token => (token.index, token.text))
+      allTokens.toMap
+    }
+    else Map()
   }
 
   def main(args: Array[String]) {

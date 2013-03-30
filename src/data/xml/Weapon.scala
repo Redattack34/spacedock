@@ -14,7 +14,7 @@ case class Weapon( name: String, weaponType: String, range: Int,
 		fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
 		beamPowerPerSec: Option[Int],
 		ordnancePerShot: Option[Float],
-		powerPerShot: Option[Int])
+		powerPerShot: Option[Float])
 
 object Weapon {
 
@@ -35,10 +35,13 @@ object Weapon {
       bulletSpeed.headOption.map(_.toInt),
       beamPower.headOption.map(_.toInt),
       ordnance.headOption.map(_.toFloat),
-      shotPower.headOption.map(_.toInt) )
+      shotPower.headOption.map(_.toFloat) )
 
   def loadWeapons( base: File ) : Seq[(File, Option[Weapon])] = {
     val weaponsDir = base / "Weapons"
+    
+    if ( !weaponsDir.exists() ) return Seq()
+    
     val allWeapons = for {
       file <- weaponsDir.listFiles().toSeq.par
       xml = XML.fromInputStream(XmlUtils.read(file))
