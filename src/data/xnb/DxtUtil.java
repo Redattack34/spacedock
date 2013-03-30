@@ -370,8 +370,8 @@ class DxtUtil
 
     private static void DecompressDxt5Block(InputStream imageReader, int x, int y, int blockCountX, int width, int height, byte[] imageData) throws IOException
     {
-        byte alpha0 = (byte) imageReader.read( );
-        byte alpha1 = (byte) imageReader.read( );
+        int alpha0 = UnsignedBytes.toInt( (byte)imageReader.read() );
+        int alpha1 = UnsignedBytes.toInt( (byte)imageReader.read() );
 
         long alphaMask = InputStreamUtils.read6Bytes( imageReader );
 
@@ -400,17 +400,15 @@ class DxtUtil
                 long alphaIndex = ((alphaMask >> 3 * (4 * blockY + blockX)) & 0x07);
                 if (alphaIndex == 0)
                 {
-                    a = alpha0;
+                    a = (byte)alpha0;
                 }
                 else if (alphaIndex == 1)
                 {
-                    a = alpha1;
+                    a = (byte)alpha1;
                 }
                 else if (alpha0 > alpha1)
                 {
-                    int a0I = UnsignedBytes.toInt( alpha0 );
-                    int a1I = UnsignedBytes.toInt( alpha1 );
-                    a = (byte)(((8 - alphaIndex) * a0I + (alphaIndex - 1) * a1I) / 7);
+                    a = (byte)(((8 - alphaIndex) * alpha0 + (alphaIndex - 1) * alpha1) / 7);
                 }
                 else if (alphaIndex == 6)
                 {
@@ -422,9 +420,7 @@ class DxtUtil
                 }
                 else
                 {
-                    int a0I = UnsignedBytes.toInt( alpha0 );
-                    int a1I = UnsignedBytes.toInt( alpha1 );
-                    a = (byte)(((6 - alphaIndex) * a0I + (alphaIndex - 1) * a1I) / 5);
+                    a = (byte)(((6 - alphaIndex) * alpha0 + (alphaIndex - 1) * alpha1) / 5);
                 }
 
                 switch (index)
