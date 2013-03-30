@@ -48,10 +48,7 @@ object Ship extends XmlLoader[Ship]{
   private def mods( e: Elem ) : Seq[String] = for {
     modList <- e \ 'RequiredModList
     mod <- modList \ 'Mod \ text
-  } yield {
-    println(mod)
-    mod
-  }
+  } yield mod
   
   def load(f: Option[File], e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
