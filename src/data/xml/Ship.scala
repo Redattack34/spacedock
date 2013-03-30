@@ -57,9 +57,21 @@ object Ship {
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
       race, hullId, modules)
 
-  def loadShips( install: File, user: File ) : Seq[(File, Option[Ship])] = {
+  def loadShips( install: File ) : Seq[(File, Option[Ship])] = {
     val shipsDirs = Seq(
-          new File(install.getAbsolutePath() + "/Content/StarterShips"),
+          new File(install.getAbsolutePath() + "/StarterShips")
+        )
+    val allShips = for {
+      shipsDir <- shipsDirs
+      file <- shipsDir.listFiles().par
+      xml = XML.fromInputStream(XmlUtils.read(file))
+      ship = ships(xml)
+    } yield (file, ship.headOption)
+    allShips.seq
+  }
+  
+  def loadCustomShips( user: File ) : Seq[(File, Option[Ship])] = {
+    val shipsDirs = Seq(
           new File(user.getAbsolutePath() + "/Saved Designs"),
           new File(user.getAbsolutePath() + "/WIP")
         )
@@ -71,7 +83,7 @@ object Ship {
     } yield (file, ship.headOption)
     allShips.seq
   }
-
+ 
   def loadShipsFromFile( f: File ) : Option[(String, Ship)] = {
     val xml = XML.fromInputStream(XmlUtils.read(f))
     val allShips = for {
@@ -133,7 +145,7 @@ object Ship {
     Elem(None, "ShipData", Attributes("xmlns:xsi" -> "http://www.w3.org/2001/XMLSchema-instance", "xmlns:xsd" -> "http://www.w3.org/2001/XMLSchema" ), Map(), 
         Group(
           getTextNode('Animated, false),
-          getTextNode('ShipStyle, ship.hull.split("/")(0)),
+          getTextNode('ShipStyle, ship.race),
           getTextNode('experience, 0),
           getTextNode('Level, 0),
           getTextNode('Name, ship.name),

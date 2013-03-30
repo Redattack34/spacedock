@@ -63,7 +63,7 @@ object Hull {
   }
 
   def loadHulls( base: File ) : Seq[(File, Option[Hull])] = {
-    val hullsDir = new File(base.getAbsolutePath() + "/Content/Hulls")
+    val hullsDir = new File(base.getAbsolutePath() + "/Hulls")
     hullsDir.listFiles().flatMap(raceHulls)
   }
 

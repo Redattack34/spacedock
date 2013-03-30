@@ -11,6 +11,7 @@ import data.xml.Module.loadModules
 import data.xml.Mod.loadMods
 import data.xml.Ship
 import data.xml.Ship.loadShips
+import data.xml.Ship.loadCustomShips
 import data.xml.Ship.loadShipsFromFile
 import data.xml.Ship.loadShipsFromUrl
 import data.xml.Ship.saveShip
@@ -23,37 +24,56 @@ import javax.swing.ImageIcon
 import javax.swing.JOptionPane
 import data.xml.Mod
 
+class ModData(dir: File) { 
+  import DataModel._
+  
+  private val englishFile = new File(dir.getAbsolutePath() + "/Localization/English.xml")
+	
+  val hullsByRace : Map[String, Map[String, Hull]] = {
+	val loadedHulls = showErrors( loadHulls(dir) )
+	loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
+  }
+  val tokens : Map[Int, String] = loadTokens(englishFile)
+  val weapons : Map[String, Weapon] = showErrors(loadWeapons(dir)).map( weap => (weap.name, weap)).toMap
+  val modules : Map[String, ShipModule] = showErrors(loadModules(dir)).map( mod => (mod.uid, mod)).toMap
+  val moduleImages : Map[String, ImageIcon] = loadModuleTextures
+  val shipDesigns : Map[String, Ship] = showErrors(loadShips(dir)).map( ship => (ship.name, ship)).toMap
+  
+  private def loadModuleTextures : Map[String, ImageIcon] = {
+    val dir = new File( this.dir.getAbsolutePath() + "/Textures/Modules")
+    val eithers = for { file <- dir.listFiles().par }
+        yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
+
+    val successes = eithers.seq.filter(_._2.isDefined).toMap
+    successes.mapValues(_.get)
+  }
+}
+
 class DataModel {
+  import DataModel._
   
   private val install = Config.install
   private val user = Config.user
-
-  private val englishFile = new File(install.getAbsolutePath() + "/Content/Localization/English.xml")
   
-  private val hullsByRace : Map[String, Map[String, Hull]] = {
-    val loadedHulls = showErrors( loadHulls(install) )
-    loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
-  }
-  private val tokens : Map[Int, String] = loadTokens(englishFile)
-  private val weapons : Map[String, Weapon] = showErrors(loadWeapons(install)).map( weap => (weap.name, weap)).toMap
-  private val modules : Map[String, ShipModule] = showErrors(loadModules(install)).map( mod => (mod.uid, mod)).toMap
-  private val moduleImages : Map[String, ImageIcon] = loadModuleTextures
-  private var shipDesigns : Map[String, Ship] = showErrors(loadShips(install, user)).map( ship => (ship.name, ship)).toMap
-  private val allMods : Map[String, Mod] = showErrors(loadMods(install)).map(mod => (mod.name, mod)).toMap
-
-  val lightningBolt : ImageIcon = loadTexture( new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
-
-  private def loadTexture(f: File) : Option[ImageIcon] = {
-    XnbReader.read(f) match {
-      case Left(ex) => {
-        JOptionPane.showMessageDialog(null, "Failed to load file: " + f + "\n" + ex,
-            "SpaceDock: Failed to Load Texture", JOptionPane.ERROR_MESSAGE)
-        None
-      }
-      case Right(im) => Some(new ImageIcon(im))
-    }
-  }
+  private val content = new File( install.getAbsolutePath() + "/Content")
+  val baseGame = new ModData(content)
   
+  val allData = Seq(baseGame)
+  
+  val allMods : Map[String, Mod] = showErrors(loadMods(install)).map(mod => (mod.name, mod)).toMap
+  
+  var customShipDesigns = showErrors(loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
+
+  val lightningBolt : ImageIcon = loadTexture( 
+      new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
+  
+  private def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
+  private def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
+  private def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
+  private def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _)
+  private def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
+  private def shipDesigns  = allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns
+      
   def races = shipDesigns.map(_._2.race).toSet.toSeq.sorted
   
   def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
@@ -76,13 +96,13 @@ class DataModel {
   
   def loadShipFromFile( f: File ) : Option[Ship] = {
     val tupleOpt = loadShipsFromFile(f)
-    tupleOpt.foreach( shipDesigns += _)
+    tupleOpt.foreach( customShipDesigns += _)
     tupleOpt.map(_._2)
   }
 
   def loadShipFromUrl( url: URL ) : Option[Ship] = {
     val tupleOpt = loadShipsFromUrl(url)
-    tupleOpt.foreach( shipDesigns += _)
+    tupleOpt.foreach( customShipDesigns += _)
     tupleOpt.map(_._2)
   }
 
@@ -91,23 +111,17 @@ class DataModel {
         .toSeq.sorted.toArray
         
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
-
-  private def loadModuleTextures : Map[String, ImageIcon] = {
-    val dir = new File( install.getAbsolutePath() + "/Content/Textures/Modules")
-    val eithers = for { file <- dir.listFiles().par }
-        yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
-
-    val successes = eithers.seq.filter(_._2.isDefined).toMap
-    successes.mapValues(_.get)
-  }
   
   def save( ship: ShipModel ) : Ship = {
     val saved = saveShip(ship, user)
-    shipDesigns += saved
+    customShipDesigns += saved
     saved._2
   }
+}
 
-  private def showErrors[T]( values: Seq[(File, Option[T])]) : Seq[T] = {
+object DataModel {
+  
+  def showErrors[T]( values: Seq[(File, Option[T])]) : Seq[T] = {
     val failures = values.filter(_._2.isEmpty)
     
     if ( !failures.isEmpty ) {
@@ -118,13 +132,16 @@ class DataModel {
     
     values.collect{ case (_, Some(t)) => t }
   }
-  
-  private def time[T]( str: String, f: => T ) : T = {
-    val watch = new Stopwatch
-    watch.start
-    val ret = f
-    watch.stop
-    println(str + " Elapsed Time: " + watch.elapsed(TimeUnit.MILLISECONDS))
-    ret
+    
+    
+  def loadTexture(f: File) : Option[ImageIcon] = {
+    XnbReader.read(f) match {
+      case Left(ex) => {
+        JOptionPane.showMessageDialog(null, "Failed to load file: " + f + "\n" + ex,
+            "SpaceDock: Failed to Load Texture", JOptionPane.ERROR_MESSAGE)
+        None
+      }
+      case Right(im) => Some(new ImageIcon(im))
+    }
   }
 }

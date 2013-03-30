@@ -37,7 +37,7 @@ object Weapon {
       shotPower.headOption.map(_.toInt) )
 
   def loadWeapons( base: File ) : Seq[(File, Option[Weapon])] = {
-    val weaponsDir = new File(base.getAbsolutePath() + "/Content/Weapons")
+    val weaponsDir = new File(base.getAbsolutePath() + "/Weapons")
     val allWeapons = for {
       file <- weaponsDir.listFiles().toSeq.par
       xml = XML.fromInputStream(XmlUtils.read(file))

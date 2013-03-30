@@ -111,7 +111,7 @@ object Module {
 
 
   def loadModules( base: File ) : Seq[(File, Option[ShipModule])] = {
-    val modulesDir = new File(base.getAbsolutePath() + "/Content/ShipModules")
+    val modulesDir = new File(base.getAbsolutePath() + "/ShipModules")
     val allModules = for {
         file <- modulesDir.listFiles().toSeq.par
         xml = XML.fromInputStream(XmlUtils.read(file))
