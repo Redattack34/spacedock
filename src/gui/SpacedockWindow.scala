@@ -39,17 +39,22 @@ object Spacedock extends SimpleSwingApplication {
 
   shipEditor.listenTo(sdMenuBar)
   shipEditor.listenTo(modules)
+  shipEditor.listenTo(dataModel)
 
   modules.listenTo(shipEditor)
+  modules.listenTo(dataModel)
   
   sdMenuBar.listenTo(shipEditor)
+  sdMenuBar.listenTo(dataModel)
 
   shipStats.listenTo(shipEditor)
   
   modWindow.listenTo(sdMenuBar)
   
   this.listenTo(shipEditor)
-
+  
+  dataModel.listenTo(modWindow)
+  
   val toolPaneBottom = new SplitPane {
     topComponent = moduleStats
     bottomComponent = shipStats

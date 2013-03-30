@@ -18,7 +18,7 @@ case class Weapon( name: String, weaponType: String, range: Int,
 
 object Weapon extends XmlLoader[Weapon]{
 
-  def load(e : Elem) : Seq[Weapon] = for {
+  def load(f: Option[File], e : Elem) : Seq[Weapon] = for {
     name <- e \ 'UID \ text
     weaponType <- e \ 'WeaponType \ text
     range <- e \ 'Range \ text

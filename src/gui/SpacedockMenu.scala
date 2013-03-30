@@ -1,7 +1,6 @@
 package gui
 
 import java.net.URL
-
 import scala.swing.ButtonGroup
 import scala.swing.CheckBox
 import scala.swing.Menu
@@ -10,13 +9,13 @@ import scala.swing.MenuItem
 import scala.swing.RadioButton
 import scala.swing.event.ButtonClicked
 import scala.swing.event.Event
-
 import data.general.DataModel
 import data.xml.Hull
 import data.xml.Ship
 import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
+import data.general.ReloadFromModel
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
@@ -166,5 +165,9 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(rb) if rb == orbitPort => publish( CombatStateSet("OrbitLeft"))
     case ButtonClicked(rb) if rb == orbitStarboard => publish( CombatStateSet("OrbitRight"))
     case ButtonClicked(rb) if rb == evade => publish( CombatStateSet("Evade"))
+    case ReloadFromModel => {
+      shipsMenu.contents.clear
+      loadMenus
+    }
   }
 }

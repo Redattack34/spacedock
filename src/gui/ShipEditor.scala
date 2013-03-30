@@ -22,6 +22,7 @@ import data.xml.ShipModule
 import data.xml.Ship
 import data.xml.ShieldData
 import data.xml.HullModuleSlot
+import data.general.ReloadFromModel
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -126,6 +127,10 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   listenTo(mouse.clicks)
 
   reactions += {
+    case ReloadFromModel => {
+      shipModel = shipModel.reload(dataModel)
+      mode = NormalMode
+    }
     case HullSelected( newHull ) => shipModel = ShipModel( dataModel, newHull )
     case ShipSelected( newShip, newHull ) => shipModel = ShipModel( dataModel, newHull, newShip )
     case ZoomSet( newZoom ) => this.zoom = newZoom

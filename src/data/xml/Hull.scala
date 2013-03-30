@@ -34,7 +34,7 @@ object Hull extends XmlLoader[Hull] {
     scale <- thrusterZone \ 'scale \ text
   } yield ThrusterZone( pos, scale.toInt )
 
-  def load(e : Elem) : Seq[Hull] = for {
+  def load(f: Option[File], e : Elem) : Seq[Hull] = for {
     name <- e \ 'Name \ text
     hull <- e \ 'Hull \ text
     role <- e \ 'Role \ text

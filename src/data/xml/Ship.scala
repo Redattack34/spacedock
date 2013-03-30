@@ -44,7 +44,7 @@ object Ship extends XmlLoader[Ship]{
   } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
       slotOptions.headOption.filter(_ != "NotApplicable"))
 
-  def load(e : Elem) : Seq[Ship] = for {
+  def load(f: Option[File], e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
     role <- e \ 'Role \ text
     combatState = e \ 'CombatState \ text

@@ -8,13 +8,13 @@ import com.codecommit.antixml.XML
 
 trait XmlLoader[T] {
 
-  def load(e : Elem) : Seq[T]
+  def load(f: Option[File], e : Elem) : Seq[T]
   
   def directory( base: File) : File
   
-  def safeLoad(e : Elem) : Seq[T] = {
+  def safeLoad(f: Option[File], e : Elem) : Seq[T] = {
     try {
-      load(e)
+      load(f, e)
     }
     catch {
       case ex: Exception => { ex.printStackTrace(); Seq() }
@@ -34,18 +34,18 @@ trait XmlLoader[T] {
       file <- dir.listFiles().toSeq.par
       if (file.isFile())
       xml = XML.fromInputStream(XmlUtils.read(file))
-      items = safeLoad(xml)
+      items = safeLoad(Some(file), xml)
     } yield (file, items.headOption)
     allItems.seq
   }
   
   def loadFromFile( f: File ) : Option[T] = {
     val xml = XML.fromInputStream(XmlUtils.read(f))
-    safeLoad(xml).headOption
+    safeLoad(Some(f), xml).headOption
   }
   
   def loadFromUrl( url: URL ) : Option[T] = {
     val xml = XML.fromInputStream(XmlUtils.read(url))
-    safeLoad(xml).headOption
+    safeLoad(None, xml).headOption
   }
 }

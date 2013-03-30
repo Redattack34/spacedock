@@ -76,7 +76,7 @@ object Module extends XmlLoader[ShipModule] {
       troopBay.headOption.map(_.toBoolean).getOrElse(false),
       supplyBay.headOption.map(_.toBoolean).getOrElse(false))
 
-  def load( e: Elem ) : Seq[ShipModule] = for {
+  def load(f: Option[File], e: Elem) : Seq[ShipModule] = for {
       name <- e \ 'NameIndex \ text
       description <- e \ 'DescriptionIndex \ text
       uid <- e \ 'UID \ text

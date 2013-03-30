@@ -17,8 +17,14 @@ import javax.swing.ImageIcon
 import javax.swing.JOptionPane
 import data.xml.Mod
 import data.general.FileExtension._
+import scala.swing.Publisher
+import scala.swing.event.Event
+import scala.swing.Reactor
+import gui.LoadMod
+import gui.ClearMods
+import gui.UnloadMod
 
-class ModData(dir: File) { 
+class ModData(val name: String, val dir: File) { 
   import DataModel._
   
   private val englishFile = dir / 'Localization / "English.xml"
@@ -33,8 +39,13 @@ class ModData(dir: File) {
   val moduleImages : Map[String, ImageIcon] = loadModuleTextures
   val shipDesigns : Map[String, Ship] = showErrors(Ship.loadAll(dir)).map( ship => (ship.name, ship)).toMap
   
+  //println(modules("FighterBay"));
+  
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = this.dir / 'Textures / 'Modules
+    
+    if ( !dir.exists() ) return Map()
+    
     val eithers = for { file <- dir.listFiles().par }
         yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
 
@@ -43,31 +54,42 @@ class ModData(dir: File) {
   }
 }
 
-class DataModel {
+case object ReloadFromModel extends Event
+
+class DataModel extends Publisher with Reactor {
   import DataModel._
   
   private val install = Config.install
   private val user = Config.user
   
   private val content = install / 'Content
-  val baseGame = new ModData(content)
+  val baseGame = new ModData("StarDrive", content)
   
   val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
   
-  val modData = Config.mods.flatMap(mod => allMods.get(mod)).map(mod => install / 'Mods / mod.name).map(new ModData(_))
+  var _modData = Config.mods
+  	            .flatMap(mod => allMods.get(mod))
+  	            .map(mod => (mod, install / 'Mods / mod.dir))
+  	            .map( tuple => new ModData( tuple._1.name, tuple._2))
+  def modData = _modData
+  def modData_=(data: Seq[ModData]) = {
+    _modData = data
+    allData = baseGame +: modData
+    publish(ReloadFromModel)
+  }
   
-  val allData = baseGame +: modData
+  var allData = baseGame +: modData
   
   var customShipDesigns = showErrors(Ship.loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
   val lightningBolt : ImageIcon = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get
   
-  private def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
-  private def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
-  private def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
-  private def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _)
-  private def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
-  private def shipDesigns  = allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns
+  def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
+  def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
+  def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
+  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _)
+  def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
+  def shipDesigns  = allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns
       
   def races = hullsByRace.keys.toSeq.sorted
   
@@ -111,6 +133,12 @@ class DataModel {
     val saved = Ship.saveShip(ship, user)
     customShipDesigns += (saved.name -> saved)
     saved
+  }
+  
+  reactions += {
+    case LoadMod(mod) => modData = modData :+ new ModData(mod.name, install / 'Mods / mod.dir)
+    case UnloadMod(mod) => modData = modData.filter(_.name != mod.name)
+    case ClearMods => modData = Seq()
   }
 }
 

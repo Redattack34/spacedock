@@ -4,7 +4,6 @@ import scala.swing.BorderPanel
 import scala.swing.Component
 import scala.swing.ScrollPane
 import scala.swing.event.Event
-
 import data.general.DataModel
 import data.xml.ShipModule
 import javax.swing.JTree
@@ -13,14 +12,14 @@ import javax.swing.event.TreeSelectionListener
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreePath
 import javax.swing.tree.TreeSelectionModel
+import data.general.ReloadFromModel
+import javax.swing.tree.DefaultTreeModel
 
 class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListener {
 
   import model._
 
-  private class ModuleNode(val mod: ShipModule) extends DefaultMutableTreeNode(token(mod.nameIndex)) {
-
-  }
+  private class ModuleNode(val mod: ShipModule) extends DefaultMutableTreeNode(token(mod.nameIndex))
 
   type Node = DefaultMutableTreeNode
 
@@ -38,21 +37,9 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
   root.add(defense)
   root.add(special)
 
-  val weaponTypeNodes =
-    weaponTypes
-      .+("Bomb")
-      .map((str : String) => ((str, new Node(str))))
-    .toMap
-  weaponTypeNodes.values.foreach(weapon.add(_))
+  var weaponTypeNodes : Map[String, Node] = Map()
 
-  val moduleTypeNodes =
-    shipModules
-      .filter(_.weaponData.isEmpty)
-      .map(_.moduleType)
-      .toSet
-      .map((str: String) => ((str, new Node(str))))
-    .toMap
-  moduleTypeNodes.foreach( (addCategory _).tupled)
+  var moduleTypeNodes : Map[String, Node] = Map()
 
   private def addCategory( modType: String, node: Node ) : Unit = modType match {
     case "PowerPlant" | "FuelCell" | "Engine" | "PowerConduit" => power.add(node)
@@ -84,7 +71,24 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
   private def assignAsModule( mod: ShipModule ) : Unit =
     moduleTypeNodes(mod.moduleType).add(toNode(mod))
 
-  shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
+  def loadModules = {
+    weaponTypeNodes = weaponTypes
+      .+("Bomb")
+      .map((str : String) => ((str, new Node(str))))
+    .toMap
+    weaponTypeNodes.values.foreach(weapon.add(_))
+    
+    moduleTypeNodes = shipModules
+      .filter(_.weaponData.isEmpty)
+      .map(_.moduleType)
+      .toSet
+      .map((str: String) => ((str, new Node(str))))
+    .toMap
+    moduleTypeNodes.foreach( (addCategory _).tupled)
+  
+  	shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
+  }
+  loadModules
 
   val tree = new JTree(root)
   tree.setRootVisible(false)
@@ -107,6 +111,16 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
       val path = new TreePath(node.getPath().asInstanceOf[Array[Object]])
       tree.expandPath(path)
       tree.setSelectionPath(path)
+    }
+    case ReloadFromModel => {
+      weapon.removeAllChildren()
+      power.removeAllChildren()
+      defense.removeAllChildren()
+      special.removeAllChildren()
+      loadModules
+      val model = tree.getModel.asInstanceOf[DefaultTreeModel]
+      model.reload
+      repaint
     }
   }
 }
