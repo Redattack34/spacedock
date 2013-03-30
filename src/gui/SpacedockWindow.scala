@@ -47,6 +47,8 @@ object Spacedock extends SimpleSwingApplication {
   shipStats.listenTo(shipEditor)
   
   modWindow.listenTo(sdMenuBar)
+  
+  this.listenTo(shipEditor)
 
   val toolPaneBottom = new SplitPane {
     topComponent = moduleStats
@@ -77,4 +79,7 @@ object Spacedock extends SimpleSwingApplication {
     maximize
   }
 
+  reactions += {
+    case ShipModelChanged(newModel) => top.title = "Spacedock: " + newModel.ship.name
+  }
 }
