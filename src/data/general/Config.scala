@@ -32,6 +32,11 @@ object Config {
     write
   }
   
+  def removeMod( name: String ) = {
+    mods = mods.filterNot(_ == name)
+    write
+  }
+  
   def clearMods = {
     mods = Vector()
     write

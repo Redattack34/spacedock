@@ -24,6 +24,7 @@ case class ZoomSet( zoom: Boolean ) extends Event
 case class FiringArcsSet( showFiringArcs: Boolean ) extends Event
 case class CombatStateSet( str: String ) extends Event
 case object SaveShip extends Event
+case object OpenModWindow extends Event
 
 class SpacedockMenu( data: DataModel ) extends MenuBar {
 
@@ -36,10 +37,13 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object LoadShipFromUrlItem extends MenuItem("Load From URL")
   case object SaveShipItem extends MenuItem("Save")
   case object ExitItem extends MenuItem("Exit")
+  case object LoadModsItem extends MenuItem("Load Mods")
   
   val fileMenu = new Menu("File")
-  fileMenu.contents ++= Seq( LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, ExitItem )
+  fileMenu.contents ++= Seq( LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem )
   this.contents += fileMenu
+
+  listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem)
   
   val attackRuns = new RadioButton("Attack Runs  ")
   attackRuns.tooltip = data.token(200)
@@ -61,7 +65,6 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   val group = new ButtonGroup( artillery, attackRuns, holdPosition,
       orbitPort, orbitStarboard, evade );
-
   
   val shipsMenu = new Menu("Ships")
   contents += shipsMenu
@@ -98,8 +101,6 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     }
   }
   
-  listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, ExitItem)
-
   contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, attackRuns,
       artillery, holdPosition, orbitPort, orbitStarboard, evade)
   listenTo( ZoomMenuItem, ShowFiringArcsItem, attackRuns, artillery,
@@ -158,6 +159,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ExitItem) => System.exit(0)
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )
+    case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
     case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet("AttackRuns"))
     case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet("Artillery"))
     case ButtonClicked(rb) if rb == holdPosition => publish( CombatStateSet("HoldPosition"))

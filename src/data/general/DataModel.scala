@@ -3,13 +3,12 @@ package data.general
 import java.io.File
 import java.net.URL
 import java.util.concurrent.TimeUnit
-
 import com.google.common.base.Stopwatch
-
 import data.xml.Hull
 import data.xml.Hull.loadHulls
 import data.xml.Localization.loadTokens
 import data.xml.Module.loadModules
+import data.xml.Mod.loadMods
 import data.xml.Ship
 import data.xml.Ship.loadShips
 import data.xml.Ship.loadShipsFromFile
@@ -22,6 +21,7 @@ import data.xnb.XnbReader
 import gui.ShipModel
 import javax.swing.ImageIcon
 import javax.swing.JOptionPane
+import data.xml.Mod
 
 class DataModel {
   
@@ -39,6 +39,7 @@ class DataModel {
   private val modules : Map[String, ShipModule] = showErrors(loadModules(install)).map( mod => (mod.uid, mod)).toMap
   private val moduleImages : Map[String, ImageIcon] = loadModuleTextures
   private var shipDesigns : Map[String, Ship] = showErrors(loadShips(install, user)).map( ship => (ship.name, ship)).toMap
+  private val allMods : Map[String, Mod] = showErrors(loadMods(install)).map(mod => (mod.name, mod)).toMap
 
   val lightningBolt : ImageIcon = loadTexture( new File( install.getAbsolutePath() + "/Content/Textures/UI/lightningBolt.xnb" ) ).get
 
@@ -88,6 +89,8 @@ class DataModel {
   def fighterDesigns : Array[String] =
     shipDesigns.values.filter( _.role == "fighter").map(_.name)
         .toSeq.sorted.toArray
+        
+  def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
 
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = new File( install.getAbsolutePath() + "/Content/Textures/Modules")

@@ -7,9 +7,9 @@ import scala.swing.Orientation
 import scala.swing.ScrollPane
 import scala.swing.SimpleSwingApplication
 import scala.swing.SplitPane
-
 import data.general.DataModel
 import javax.swing.UIManager
+import scala.swing.Window
 
 object Spacedock extends SimpleSwingApplication {
 
@@ -33,6 +33,7 @@ object Spacedock extends SimpleSwingApplication {
   val shipStats: Component = new ShipStats()
   val moduleStats: Component = new ModuleStats(dataModel)
   val sdMenuBar: MenuBar = new SpacedockMenu(dataModel)
+  val modWindow: Window = new ModWindow(dataModel)
 
   moduleStats.listenTo(modules)
 
@@ -40,9 +41,12 @@ object Spacedock extends SimpleSwingApplication {
   shipEditor.listenTo(modules)
 
   modules.listenTo(shipEditor)
+  
   sdMenuBar.listenTo(shipEditor)
 
   shipStats.listenTo(shipEditor)
+  
+  modWindow.listenTo(sdMenuBar)
 
   val toolPaneBottom = new SplitPane {
     topComponent = moduleStats
