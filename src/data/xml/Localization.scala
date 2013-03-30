@@ -26,15 +26,4 @@ object Localization {
     }
     else Map()
   }
-
-  def main(args: Array[String]) {
-    val f = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\Localization")
-    val allHulls = for {
-      file <- f.listFiles()
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      tokenList = tokens(xml)
-    } yield (file.getName, tokenList)
-
-    allHulls.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
-  }
 }

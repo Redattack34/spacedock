@@ -16,9 +16,9 @@ case class Weapon( name: String, weaponType: String, range: Int,
 		ordnancePerShot: Option[Float],
 		powerPerShot: Option[Float])
 
-object Weapon {
+object Weapon extends XmlLoader[Weapon]{
 
-  private def weapons(e : Elem) : Seq[Weapon] = for {
+  def load(e : Elem) : Seq[Weapon] = for {
     name <- e \ 'UID \ text
     weaponType <- e \ 'WeaponType \ text
     range <- e \ 'Range \ text
@@ -37,27 +37,6 @@ object Weapon {
       ordnance.headOption.map(_.toFloat),
       shotPower.headOption.map(_.toFloat) )
 
-  def loadWeapons( base: File ) : Seq[(File, Option[Weapon])] = {
-    val weaponsDir = base / "Weapons"
-    
-    if ( !weaponsDir.exists() ) return Seq()
-    
-    val allWeapons = for {
-      file <- weaponsDir.listFiles().toSeq.par
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      weapon = weapons(xml)
-    } yield (file, weapon.headOption)
-    allWeapons.seq
-  }
-
-  def main(args: Array[String]) {
-    val f = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\Weapons")
-    val allWeaps = for {
-      file <- f.listFiles()
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      weap = weapons(xml)
-    } yield (file.getName, weap.headOption)
-
-    allWeaps.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
-  }
+  def directory(base: File) = base / 'Weapons
+  
 }

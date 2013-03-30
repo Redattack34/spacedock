@@ -5,19 +5,12 @@ import java.net.URL
 import java.util.concurrent.TimeUnit
 import com.google.common.base.Stopwatch
 import data.xml.Hull
-import data.xml.Hull.loadHulls
 import data.xml.Localization.loadTokens
-import data.xml.Module.loadModules
-import data.xml.Mod.loadMods
+import data.xml.Module
+import data.xml.Mod
 import data.xml.Ship
-import data.xml.Ship.loadShips
-import data.xml.Ship.loadCustomShips
-import data.xml.Ship.loadShipsFromFile
-import data.xml.Ship.loadShipsFromUrl
-import data.xml.Ship.saveShip
 import data.xml.ShipModule
 import data.xml.Weapon
-import data.xml.Weapon.loadWeapons
 import data.xnb.XnbReader
 import gui.ShipModel
 import javax.swing.ImageIcon
@@ -31,14 +24,14 @@ class ModData(dir: File) {
   private val englishFile = dir / 'Localization / "English.xml"
 	
   val hullsByRace : Map[String, Map[String, Hull]] = {
-	val loadedHulls = showErrors( loadHulls(dir) )
+	val loadedHulls = showErrors( Hull.loadAll(dir) )
 	loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
   }
   val tokens : Map[Int, String] = loadTokens(englishFile)
-  val weapons : Map[String, Weapon] = showErrors(loadWeapons(dir)).map( weap => (weap.name, weap)).toMap
-  val modules : Map[String, ShipModule] = showErrors(loadModules(dir)).map( mod => (mod.uid, mod)).toMap
+  val weapons : Map[String, Weapon] = showErrors(Weapon.loadAll(dir)).map( weap => (weap.name, weap)).toMap
+  val modules : Map[String, ShipModule] = showErrors(Module.loadAll(dir)).map( mod => (mod.uid, mod)).toMap
   val moduleImages : Map[String, ImageIcon] = loadModuleTextures
-  val shipDesigns : Map[String, Ship] = showErrors(loadShips(dir)).map( ship => (ship.name, ship)).toMap
+  val shipDesigns : Map[String, Ship] = showErrors(Ship.loadAll(dir)).map( ship => (ship.name, ship)).toMap
   
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = this.dir / 'Textures / 'Modules
@@ -59,13 +52,13 @@ class DataModel {
   private val content = install / 'Content
   val baseGame = new ModData(content)
   
-  val allMods : Map[String, Mod] = showErrors(loadMods(install)).map(mod => (mod.name, mod)).toMap
+  val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
   
   val modData = Config.mods.flatMap(mod => allMods.get(mod)).map(mod => install / 'Mods / mod.name).map(new ModData(_))
   
   val allData = baseGame +: modData
   
-  var customShipDesigns = showErrors(loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
+  var customShipDesigns = showErrors(Ship.loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
   val lightningBolt : ImageIcon = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get
   
@@ -97,15 +90,15 @@ class DataModel {
   def moduleImage( mod: ShipModule) = moduleImages(mod.iconTexturePath)
   
   def loadShipFromFile( f: File ) : Option[Ship] = {
-    val tupleOpt = loadShipsFromFile(f)
-    tupleOpt.foreach( customShipDesigns += _)
-    tupleOpt.map(_._2)
+    val ship = Ship.loadFromFile(f)
+    ship.foreach( ship => customShipDesigns += (ship.name -> ship))
+    ship
   }
 
   def loadShipFromUrl( url: URL ) : Option[Ship] = {
-    val tupleOpt = loadShipsFromUrl(url)
-    tupleOpt.foreach( customShipDesigns += _)
-    tupleOpt.map(_._2)
+    val ship = Ship.loadFromUrl(url)
+    ship.foreach( ship => customShipDesigns += (ship.name -> ship))
+    ship
   }
 
   def fighterDesigns : Array[String] =
@@ -115,9 +108,9 @@ class DataModel {
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
   
   def save( ship: ShipModel ) : Ship = {
-    val saved = saveShip(ship, user)
-    customShipDesigns += saved
-    saved._2
+    val saved = Ship.saveShip(ship, user)
+    customShipDesigns += (saved.name -> saved)
+    saved
   }
 }
 

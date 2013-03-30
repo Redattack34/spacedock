@@ -39,7 +39,7 @@ case class ShipModule(
 		engineData: Option[EngineData],
 		hangarData: Option[HangarData])
 		
-object Module {
+object Module extends XmlLoader[ShipModule] {
 
   private def shields( e : Elem ) : Seq[ShieldData] = for {
     shieldPower <- e \ 'shield_power \ text
@@ -76,7 +76,7 @@ object Module {
       troopBay.headOption.map(_.toBoolean).getOrElse(false),
       supplyBay.headOption.map(_.toBoolean).getOrElse(false))
 
-  private def modules( e: Elem ) : Seq[ShipModule] = for {
+  def load( e: Elem ) : Seq[ShipModule] = for {
       name <- e \ 'NameIndex \ text
       description <- e \ 'DescriptionIndex \ text
       uid <- e \ 'UID \ text
@@ -111,32 +111,8 @@ object Module {
         shieldData.headOption, powerPlantData.headOption,
         weaponData.headOption, engineData.headOption, hangarData.headOption )
 
-
-  def loadModules( base: File ) : Seq[(File, Option[ShipModule])] = {
-    val modulesDir = base / 'ShipModules
-    
-    if ( !modulesDir.exists ) return Seq()
-    
-    val allModules = for {
-        file <- modulesDir.listFiles().toSeq.par
-        xml = XML.fromInputStream(XmlUtils.read(file))
-        module = modules(xml)
-    } yield (file, module.headOption)
-    allModules.seq
-  }
-
+  def directory(base: File) = base / 'ShipModules
+  
   val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", "", "", 0.0f, 0, 0, 0,
       None, None, None, None, None, None, None, None)
-
-  def main(args: Array[String]) {
-    val f = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\ShipModules")
-    val allModules = for {
-      file <- f.listFiles()
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      module = modules(xml)
-    } yield (file.getName, module.headOption)
-
-    allModules.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
-    allModules.filter(_._1 == "Dummy").foreach(println)
-  }
 }

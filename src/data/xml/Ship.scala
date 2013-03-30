@@ -33,7 +33,7 @@ case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
 case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
 		race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot])
 
-object Ship {
+object Ship extends XmlLoader[Ship]{
 
   private def slots( e: Elem ) : Seq[ShipModuleSlot] = for {
     moduleSlot <- e \ 'ModuleSlotData
@@ -44,7 +44,7 @@ object Ship {
   } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
       slotOptions.headOption.filter(_ != "NotApplicable"))
 
-  private def ships(e : Elem) : Seq[Ship] = for {
+  def load(e : Elem) : Seq[Ship] = for {
     name <- e \ 'Name \ text
     role <- e \ 'Role \ text
     combatState = e \ 'CombatState \ text
@@ -58,50 +58,15 @@ object Ship {
   } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
       race, hullId, modules)
 
-  def loadShips( install: File ) : Seq[(File, Option[Ship])] = {
-    val shipsDir = install / 'StarterShips
-    
-    if ( !shipsDir.exists ) return Seq()
-    
-    val allShips = for {
-      file <- shipsDir.listFiles().par
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      ship = ships(xml)
-    } yield (file, ship.headOption)
-    allShips.seq
-  }
+  def directory(base: File) = base / 'StarterShips
   
   def loadCustomShips( user: File ) : Seq[(File, Option[Ship])] = {
-    val shipsDirs = Seq(
-          user / "Saved Designs",
-          user / "WIP"
-        )
-        
-    val allShips = for {
-      shipsDir <- shipsDirs
-      file <- shipsDir.listFiles().par
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      ship = ships(xml)
-    } yield (file, ship.headOption)
-    allShips.seq
+    val savedDesigns = loadFromDirectory(user / "Saved Designs")
+    val wip = loadFromDirectory( user / "WIP" )
+
+    savedDesigns ++ wip
   }
  
-  def loadShipsFromFile( f: File ) : Option[(String, Ship)] = {
-    val xml = XML.fromInputStream(XmlUtils.read(f))
-    val allShips = for {
-      ship <- ships(xml)
-    } yield (ship.name, ship)
-    allShips.headOption
-  }
-  
-  def loadShipsFromUrl( url: URL ) : Option[(String, Ship)] = {
-    val xml = XML.fromInputStream(XmlUtils.read(url))
-    val allShips = for {
-      ship <- ships(xml)
-    } yield (ship.name, ship)
-    allShips.headOption
-  }
-
   private def getTextNode( name: Symbol, text: Any ) = {
     Elem(None, name.name, Attributes.empty, Map(), Group(Text(text.toString)))
   }
@@ -167,7 +132,7 @@ object Ship {
         ))
   } 
   
-  def saveShip( ship: ShipModel, user: File ) : (String, Ship) = {
+  def saveShip( ship: ShipModel, user: File ) : Ship = {
     val xml = shipToXml(ship)
     val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "WIP"
               else "Saved Designs"
@@ -183,39 +148,6 @@ object Ship {
     writer.print(sb)
     writer.close
     
-    loadShipsFromFile(file).get
-  }
-
-  def testSerialization = {
-    val hullFile = new File("C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive\\Content\\Hulls\\Terran\\Hunter.xml")
-    val shipFile = new File("C:\\Users\\Redattack34\\AppData\\Roaming\\StarDrive\\Saved Designs\\Broadsword Mk II.xml")
-    
-    val ship = ships( XML.fromInputStream(XmlUtils.read(shipFile))).head
-    val hull = Hull.hulls( "Terran", "Broadsword Mk II", XML.fromInputStream(XmlUtils.read(hullFile))).head
-        
-    val dataModel = new DataModel
-    val xml = shipToXml(ShipModel(dataModel, hull, ship))
-    val test = scala.xml.XML.loadString(xml.toString)
-    val printer = new PrettyPrinter(200, 2)
-    val sb = new StringBuilder()
-    printer.format(test, sb)
-    println(sb);
-  }
-  
-  def testReading = {
-        val f = new File("C:\\Users\\Redattack34\\AppData\\Roaming\\StarDrive\\Saved Designs")
-    val allShips = for {
-      file <- f.listFiles()
-      xml = XML.fromInputStream(XmlUtils.read(file))
-      ship = ships(xml)
-    } yield (file.getName, ship.headOption)
-
-    allShips.filter(_._2.isEmpty).foreach(f => println("Failed to parse: " + f._1))
-    allShips.filter(_._2.isDefined).foreach(t => println( t._1 + ": " + t._2.get.toString ))
-  } 
-  
-  def main(args: Array[String]) {
-    //testSerialization
-    testReading
+    loadFromFile(file).get
   }
 }
