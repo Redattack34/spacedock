@@ -36,6 +36,7 @@ object Hull extends XmlLoader[Hull] {
 
   def load(e : Elem) : Seq[Hull] = for {
     name <- e \ 'Name \ text
+    hull <- e \ 'Hull \ text
     role <- e \ 'Role \ text
     iconPath <- e \ 'IconPath \ text
     selectionGraphic = e \ 'SelectionGraphic \ text
@@ -44,7 +45,7 @@ object Hull extends XmlLoader[Hull] {
     defaultAIState <- e \ 'DefaultAIState \ text
     moduleSlotList <- e \ 'ModuleSlotList
     moduleSlots = slots(moduleSlotList)
-  } yield Hull( name, "", role, "", iconPath, selectionGraphic.headOption, allThrusters,
+  } yield Hull( name, hull, role, "", iconPath, selectionGraphic.headOption, allThrusters,
       modelPath, defaultAIState, moduleSlots)
 
   def directory(base: File) = base
@@ -58,7 +59,7 @@ object Hull extends XmlLoader[Hull] {
       race <- dir.listFiles
       ship <- race.listFiles
       loaded = super.loadFromFile(ship)
-    } yield (ship, loaded.map( _.copy( hullId = ship.getName.replace(".xml", ""), race = race.getName ) ))
+    } yield (ship, loaded.map( _.copy( race = race.getName ) ))
     
     return hulls
   }

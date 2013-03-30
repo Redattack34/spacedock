@@ -59,7 +59,7 @@ object Spacedock extends SimpleSwingApplication {
 
   val toolPaneTop = new SplitPane {
     oneTouchExpandable = true
-    resizeWeight = 0.33
+    resizeWeight = 0.0
     topComponent = modules
     bottomComponent = toolPaneBottom
   }

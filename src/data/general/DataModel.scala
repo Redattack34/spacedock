@@ -69,7 +69,7 @@ class DataModel {
   private def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
   private def shipDesigns  = allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns
       
-  def races = shipDesigns.map(_._2.race).toSet.toSeq.sorted
+  def races = hullsByRace.keys.toSeq.sorted
   
   def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
   
@@ -81,7 +81,7 @@ class DataModel {
   
   def token(id: Int) = tokens(id)
   
-  def weapon(weaponId: String) = weapons(weaponId)
+  def weapon(weaponId: String) = weapons.get(weaponId).orElse(weapons.get(weaponId.replace("Dual", "").trim)).get
   def weaponTypes = weapons.values.map(_.weaponType).toSet
   
   def module( moduleId: String ) = modules(moduleId)
