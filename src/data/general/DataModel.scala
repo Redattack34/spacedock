@@ -87,7 +87,7 @@ class DataModel extends Publisher with Reactor {
   def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
   def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
   def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
-  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _)
+  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _).filter(_._2.moduleType != "Dummy")
   def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
   def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
   	.filter(_._2.requiredModsList.forall(loadedMods.contains))
