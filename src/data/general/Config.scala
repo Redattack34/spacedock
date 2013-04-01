@@ -7,6 +7,8 @@ import scala.io.Source
 
 import javax.swing.JFileChooser
 
+import Iterator._
+
 object Config {
   
   private[this] var _install : File = null
@@ -27,6 +29,9 @@ object Config {
     _mods = newMods
   }
   
+  val chooser = new JFileChooser
+  chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+  
   def addMod( name: String ) = {
     mods = mods ++ Seq(name)
     write
@@ -44,9 +49,8 @@ object Config {
   
   private[this] val config = new File("config")
   if ( !config.exists() || !config.canRead() ) {
-    val (install, user) = getDirectories
-    this.install = install
-    this.user = user
+    this.install = installDirs.find(isValidInstallDir).get
+    this.user = userDirs.find(isValidUserDir).get
     write
   }
   else {
@@ -58,47 +62,34 @@ object Config {
   }
   
   private def isValidInstallDir( f: File ) =
-    f != null && f.exists() && f.list.contains("Content")
+    f != null && f.exists() && f.list.contains("Content") && f.list.contains("Mods")
 
   private def isValidUserDir( f: File ) =
     f != null && f.exists() && f.list.contains("Saved Designs") && f.list.contains("WIP")
 
-  private def defaultInstallDir : File = {
-    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive" )
-  }
+  private def installDirs : Iterator[File] = Iterator(
+    new File( "C:\\Program Files\\Steam\\steamapps\\common\\StarDrive"),
+    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDriver" )
+  ) ++ continually(showChooser("Select StarDrive Install Directory")).flatten
 
-  private def defaultUserDir : File = {
-    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
-  }
+  private def userDirs : Iterator[File] = Iterator(
+    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDriver" )
+  ) ++ continually(showChooser("Select StarDrive Saved Ships Directory")).flatten
   
-  private def getDirectories : (File, File) = {
-    val chooser = new JFileChooser
-    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
-    var installDir = defaultInstallDir
-    while ( !isValidInstallDir(installDir) ) {
-      chooser.setDialogTitle("Select StarDrive Install Directory")
-      val accept = chooser.showOpenDialog(null)
-      if ( accept == JFileChooser.APPROVE_OPTION ) {
-        installDir = chooser.getSelectedFile()
-      }
-      if ( accept == JFileChooser.CANCEL_OPTION ) {
-        System.exit(0)
-      }
+  private def showChooser( prompt: String ) : Iterator[File] = {
+    chooser.setDialogTitle(prompt)
+    val accept = chooser.showOpenDialog(null)
+    if ( accept == JFileChooser.APPROVE_OPTION ) {
+      val selected = chooser.getSelectedFile
+      Iterator( selected, selected.getParentFile ) ++ Iterator( selected.listFiles:_* )
     }
-
-    var userDir = defaultUserDir
-    while ( !isValidUserDir(userDir) ) {
-      chooser.setDialogTitle("Select StarDrive User Directory")
-      val accept = chooser.showOpenDialog(null)
-      if ( accept == JFileChooser.APPROVE_OPTION ) {
-        userDir = chooser.getSelectedFile()
-      }
-      if ( accept == JFileChooser.CANCEL_OPTION ) {
-        System.exit(0)
-      }
+    else if ( accept == JFileChooser.CANCEL_OPTION ) {
+      System.exit(0)
+      Iterator.empty
     }
-
-    (installDir, userDir)
+    else {
+      Iterator.empty
+    }
   }
   
   private def write = {
