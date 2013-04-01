@@ -69,11 +69,11 @@ object Config {
 
   private def installDirs : Iterator[File] = Iterator(
     new File( "C:\\Program Files\\Steam\\steamapps\\common\\StarDrive"),
-    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDriver" )
+    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive" )
   ) ++ continually(showChooser("Select StarDrive Install Directory")).flatten
 
   private def userDirs : Iterator[File] = Iterator(
-    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDriver" )
+    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
   ) ++ continually(showChooser("Select StarDrive Saved Ships Directory")).flatten
   
   private def showChooser( prompt: String ) : Iterator[File] = {
@@ -81,7 +81,7 @@ object Config {
     val accept = chooser.showOpenDialog(null)
     if ( accept == JFileChooser.APPROVE_OPTION ) {
       val selected = chooser.getSelectedFile
-      Iterator( selected, selected.getParentFile ) ++ Iterator( selected.listFiles:_* )
+      Iterator( selected, selected.getParentFile ) ++ selected.listFiles
     }
     else if ( accept == JFileChooser.CANCEL_OPTION ) {
       System.exit(0)
