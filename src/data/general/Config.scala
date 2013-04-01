@@ -64,11 +64,11 @@ object Config {
     f != null && f.exists() && f.list.contains("Saved Designs") && f.list.contains("WIP")
 
   private def defaultInstallDir : File = {
-    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDriver" )
+    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive" )
   }
 
   private def defaultUserDir : File = {
-    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDriver" )
+    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
   }
   
   private def getDirectories : (File, File) = {
