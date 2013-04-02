@@ -181,10 +181,10 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
     if ( !data.hulls(hull.race).contains(hull) ) return ShipModel.empty
     val allModules = data.modules
     val newModel = slots.filter( _._2.module != dummy)
-    	 .filter( t => allModules.contains( t._2.module.uid ) )
-    	 .foldLeft(ShipModel(data, hull))( (acc, slot) =>
-    	   acc.placeModule(slot._1, data.module(slot._2.module.uid))
-    	 )
+       .filter( t => allModules.contains( t._2.module.uid ) )
+       .foldLeft(ShipModel(data, hull))( (acc, slot) =>
+         acc.placeModule(slot._1, data.module(slot._2.module.uid))
+       )
     newModel.copy( ship = ship.copy( requiredModsList = data.loadedMods))
   }
   

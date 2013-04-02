@@ -22,23 +22,23 @@ case class EngineData(thrust: Int, turnThrust: Int, warpThrust: Int )
 case class HangarData( timerConstant: Int, isTroopBay: Boolean, isSupplyBay: Boolean )
 
 case class ShipModule(
-		//Basics
-		nameIndex: Int, descriptionIndex: Int, uid: String,
-		
-		//Module structure stuff
-		xSize: Int, ySize: Int, moduleType: String, restrictions: String,
-		iconTexturePath: String,
-		
-		//Game stats
-		cost: Float, mass: Float, health: Int, powerDraw: Float, bonusRepair: Option[Int],
-		ordnanceCapacity: Option[Int], cargoCapacity: Option[Int],
-		
-		shieldData: Option[ShieldData],
-		powerPlantData: Option[PowerPlantData],
-		weaponData: Option[WeaponData],
-		engineData: Option[EngineData],
-		hangarData: Option[HangarData])
-		
+    //Basics
+    nameIndex: Int, descriptionIndex: Int, uid: String,
+    
+    //Module structure stuff
+    xSize: Int, ySize: Int, moduleType: String, restrictions: String,
+    iconTexturePath: String,
+    
+    //Game stats
+    cost: Float, mass: Float, health: Int, powerDraw: Float, bonusRepair: Option[Int],
+    ordnanceCapacity: Option[Int], cargoCapacity: Option[Int],
+    
+    shieldData: Option[ShieldData],
+    powerPlantData: Option[PowerPlantData],
+    weaponData: Option[WeaponData],
+    engineData: Option[EngineData],
+    hangarData: Option[HangarData])
+    
 object Module extends XmlLoader[ShipModule] {
 
   private def shields( e : Elem ) : Seq[ShieldData] = for {

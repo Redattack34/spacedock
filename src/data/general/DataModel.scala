@@ -30,10 +30,10 @@ class ModData(val name: String, val dir: File) {
   import DataModel._
   
   private val englishFile = dir / 'Localization / "English.xml"
-	
+  
   val hullsByRace : Map[String, Map[String, Hull]] = {
-	val loadedHulls = showErrors( Hull.loadAll(dir) )
-	loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
+  val loadedHulls = showErrors( Hull.loadAll(dir) )
+  loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
   }
   val tokens : Map[Int, String] = loadTokens(englishFile)
   val weapons : Map[String, Weapon] = showErrors(Weapon.loadAll(dir)).map( weap => (weap.name, weap)).toMap
@@ -73,9 +73,9 @@ class DataModel extends Publisher with Reactor {
   val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
   
   var _modData = Config.mods
-  	            .flatMap(mod => allMods.get(mod))
-  	            .map(mod => (mod, install / 'Mods / mod.dir))
-  	            .map( tuple => new ModData( tuple._1.name, tuple._2))
+                .flatMap(mod => allMods.get(mod))
+                .map(mod => (mod, install / 'Mods / mod.dir))
+                .map( tuple => new ModData( tuple._1.name, tuple._2))
   def modData = _modData
   def modData_=(data: Seq[ModData]) = {
     _modData = data
@@ -95,7 +95,7 @@ class DataModel extends Publisher with Reactor {
   def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _).filter(_._2.moduleType != "Dummy")
   def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
   def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
-  	.filter(_._2.requiredModsList.forall(loadedMods.contains))
+    .filter(_._2.requiredModsList.forall(loadedMods.contains))
   def techsByMod   = allData.map(_.techsByMod  ).reduceLeft(_ ++ _)
   def techsByHull  = allData.map(_.techsByHull ).reduceLeft(_ ++ _)
       

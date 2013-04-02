@@ -15,8 +15,8 @@ case class HullModuleSlot( pos: Position, restrictions: String, slotOptions: Opt
 case class ThrusterZone(pos: Position, scale: Int)
 
 case class Hull( name: String, hullId: String, role: String, race: String, iconPath: String,
-		selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
-		defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
+    selectionGraphic: Option[String], thrusterList: Seq[ThrusterZone], modelPath: String,
+    defaultAIState: String, moduleSlotList: Seq[HullModuleSlot])
 
 object Hull extends XmlLoader[Hull] {
 

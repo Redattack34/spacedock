@@ -90,7 +90,7 @@ class ModWindow(data: DataModel) extends Frame {
     val panel = new ModPanel(mod)
     listenTo(panel.load)
     if ( panels.contents.length >= 1 ) {
-    	panels.contents += VStrut(3)
+      panels.contents += VStrut(3)
     }
     panels.contents += panel
     modPanels += (mod.name -> panel)
@@ -108,8 +108,8 @@ class ModWindow(data: DataModel) extends Frame {
   listenTo(ClearButton)
   
   private val modPanel = new BorderPanel {
-	  add(scroll, BorderPanel.Position.Center)
-	  add(clearPanel, BorderPanel.Position.South)
+    add(scroll, BorderPanel.Position.Center)
+    add(clearPanel, BorderPanel.Position.South)
   }
   
   contents = modPanel

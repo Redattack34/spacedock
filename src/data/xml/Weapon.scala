@@ -11,10 +11,10 @@ import com.codecommit.antixml.text
 import data.general.FileExtension._
 
 case class Weapon( name: String, weaponType: String, range: Int,
-		fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
-		beamPowerPerSec: Option[Int],
-		ordnancePerShot: Option[Float],
-		powerPerShot: Option[Float])
+    fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],
+    beamPowerPerSec: Option[Int],
+    ordnancePerShot: Option[Float],
+    powerPerShot: Option[Float])
 
 object Weapon extends XmlLoader[Weapon]{
 

@@ -28,10 +28,10 @@ import gui.ShipModel
 
 
 case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
-		slotOptions: Option[String] )
-		
+    slotOptions: Option[String] )
+    
 case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
-		race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot], requiredModsList: Seq[String]){
+    race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot], requiredModsList: Seq[String]){
 }
 
 object Ship extends XmlLoader[Ship]{

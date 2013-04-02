@@ -86,7 +86,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
     .toMap
     moduleTypeNodes.foreach( (addCategory _).tupled)
   
-  	shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
+    shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
   }
   loadModules
 
