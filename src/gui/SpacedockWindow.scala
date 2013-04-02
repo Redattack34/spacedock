@@ -30,7 +30,7 @@ object Spacedock extends SimpleSwingApplication {
 
   val modules: Component = new ModuleList(dataModel)
   val shipEditor: Component = new ShipEditor(dataModel)
-  val shipStats: Component = new ShipStats()
+  val shipStats: Component = new ShipStats(dataModel)
   val moduleStats: Component = new ModuleStats(dataModel)
   val sdMenuBar: MenuBar = new SpacedockMenu(dataModel)
   val modWindow: Window = new ModWindow(dataModel)

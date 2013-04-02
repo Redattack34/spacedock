@@ -1,12 +1,13 @@
 package gui
 
 import java.text.DecimalFormat
-
 import scala.swing.BoxPanel
 import scala.swing.Label
 import scala.swing.Orientation
+import data.general.DataModel
+import scala.swing.Alignment
 
-class ShipStats extends BoxPanel(Orientation.Vertical) {
+class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
 
   val cost = addLabel
   val powerCapacity = addLabel
@@ -23,9 +24,12 @@ class ShipStats extends BoxPanel(Orientation.Vertical) {
 
   val hasBridge = addLabel
   val emptySlots = addLabel
+  val research = addLabel
 
   def addLabel : Label = {
     val label = new Label
+    label.horizontalAlignment = Alignment.Left
+    label.horizontalTextPosition = Alignment.Left
     contents += label
     label
   }
@@ -33,6 +37,13 @@ class ShipStats extends BoxPanel(Orientation.Vertical) {
   val warpSpeedFormat = new DecimalFormat("###.#k")
   val turnRateFormat = new DecimalFormat("###.##")
 
+  def getResearch(model: ShipModel) : String = {
+    val hullResearch = dataModel.techForHull(model.hull.race, model.hull.hullId)
+    val modResearch = dataModel.techsForMods(model.allModules.values.toSet)
+    val allResearch = hullResearch ++ modResearch
+    allResearch.map(_.nameID).map(dataModel.token).mkString(", ")
+  }
+  
   reactions += {
     case ShipModelChanged(newModel) => {
       cost.text = "Production Cost: " + newModel.cost
@@ -49,6 +60,7 @@ class ShipStats extends BoxPanel(Orientation.Vertical) {
       cargoSpace.text = "Cargo Space: " + newModel.cargoSpace
       hasBridge.text = "Has Cockpit/Bridge/CIC: " + newModel.hasCommandModule
       emptySlots.text = "Has Empty Slots: " + newModel.hasEmptySlots
+      research.text = "<html>Research Required: " + getResearch(newModel) + "</html>"
     }
   }
 }

@@ -23,6 +23,8 @@ import scala.swing.Reactor
 import gui.LoadMod
 import gui.ClearMods
 import gui.UnloadMod
+import data.xml.Technology
+import data.xml.Research
 
 class ModData(val name: String, val dir: File) { 
   import DataModel._
@@ -38,6 +40,9 @@ class ModData(val name: String, val dir: File) {
   val modules : Map[String, ShipModule] = showErrors(Module.loadAll(dir)).map( mod => (mod.uid, mod)).toMap
   val moduleImages : Map[String, ImageIcon] = loadModuleTextures
   val shipDesigns : Map[String, Ship] = showErrors(Ship.loadAll(dir)).map( ship => (ship.name, ship)).toMap
+  val technologies : Seq[Technology] = showErrors(Research.loadAll(dir))
+  val techsByMod = technologies.flatMap(t => t.modules.map( (_, t) )).toMap
+  val techsByHull = technologies.flatMap(t => t.hulls.map( (_, t) )).toMap
   
   //println(modules("FighterBay"));
   
@@ -91,6 +96,8 @@ class DataModel extends Publisher with Reactor {
   def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
   def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
   	.filter(_._2.requiredModsList.forall(loadedMods.contains))
+  def techsByMod   = allData.map(_.techsByMod  ).reduceLeft(_ ++ _)
+  def techsByHull  = allData.map(_.techsByHull ).reduceLeft(_ ++ _)
       
   def races = hullsByRace.keys.toSeq.sorted
   
@@ -130,6 +137,14 @@ class DataModel extends Publisher with Reactor {
         
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
   def loadedMods : Seq[String] = modData.map(_.name)
+  
+  def techsForMods( mods: Iterable[ShipModule]) : Set[Technology] = {
+    val techs = techsByMod
+    mods.map(_.uid).flatMap(techs.get).toSet
+  }
+    
+  def techForHull( race: String, hull: String ) : Option[Technology] =
+    techsByHull.get( race + "/" + hull )
   
   def save( ship: ShipModel ) : Ship = {
     val saved = Ship.saveShip(ship, user)
