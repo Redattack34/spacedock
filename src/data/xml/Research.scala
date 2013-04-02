@@ -25,9 +25,13 @@ object Research extends XmlLoader[Technology] {
     hull <- unlockedHull \ 'Name \ text
   } yield hull
   
-  def load( f: Option[File], e: Elem ) : Seq[Technology] = for {
-    nameId <- e \ 'NameIndex \ text
-    allModules = modules(e)
-    allHulls = hulls(e)
-  } yield Technology ( nameId.toInt, allModules, allHulls)
+  def load( f: Option[File], e: Elem ) : Seq[Technology] = {
+    val nameId = (e \ 'NameIndex \ text)
+    val allModules = modules(e)
+    val allHulls = hulls(e)
+    val tech = Technology( nameId.headOption.map(_.toInt).getOrElse(509), allModules, allHulls)
+    Seq(tech)
+  } 
+  //509 is the name ID for the 'correct' Ancient Repulsor. This avoids failing
+  //on the invalid one.
 }
