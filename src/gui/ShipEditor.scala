@@ -126,6 +126,9 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   listenTo(mouse.moves)
   listenTo(mouse.clicks)
 
+  def getMouseOver( loc: AwtPoint ) = 
+    Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
+  
   reactions += {
     case ReloadFromModel => {
       shipModel = shipModel.reload(dataModel)
@@ -146,8 +149,10 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
       }
     }
 
-    case MouseMoved(comp, loc, _) if comp == this => mouseOver = Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
+    case MouseMoved(comp, loc, _) if comp == this => mouseOver = getMouseOver(loc)
     case MouseDragged(comp, loc, _) if comp == this => {
+      val oldMouseOver = mouseOver
+      mouseOver = getMouseOver(loc)
       if (  mode.isFacing ) {
         val FacingMode(p, mod) = mode
         if ( mod.moduleType == "Turret" ) {
@@ -162,6 +167,9 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
           shipModel = shipModel.setFacing(p, angleDeg.toFloat)
         }
+      }
+      if ( mode.isPlacement && oldMouseOver != mouseOver ) {
+        leftClick
       }
     }
     case cl: MousePressed if cl.isRight => rightClick
