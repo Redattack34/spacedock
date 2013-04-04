@@ -189,6 +189,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
   }
   
   val cost = allModules.values.map(_.cost).sum
+  val upkeep = allSlots.size.toDouble * 0.01
   val powerCapacity = allModules.values
       .flatMap(_.powerPlantData)
       .map(_.powerStoreMax)

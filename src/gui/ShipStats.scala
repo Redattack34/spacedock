@@ -10,6 +10,7 @@ import scala.swing.Alignment
 class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
 
   val cost = addLabel
+  val upkeep = addLabel
   val powerCapacity = addLabel
   val recharge = addLabel
   val rechargeAtWarp = addLabel
@@ -47,6 +48,7 @@ class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
   reactions += {
     case ShipModelChanged(newModel) => {
       cost.text = "Production Cost: " + newModel.cost
+      upkeep.text = "Upkeep: " + newModel.upkeep + "/turn"
       powerCapacity.text = "Power Capacity: " + newModel.powerCapacity
       recharge.text = "Power Recharge: " + newModel.recharge
       rechargeAtWarp.text = "Recharge at Warp: " + newModel.rechargeAtWarp
