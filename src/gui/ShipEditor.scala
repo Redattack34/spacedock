@@ -23,6 +23,7 @@ import data.xml.Ship
 import data.xml.ShieldData
 import data.xml.HullModuleSlot
 import data.general.ReloadFromModel
+import data.xml.ShipModule
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -77,6 +78,13 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     _arcs = a
     repaint
   }
+  
+  private var _mirror = false;
+  private def mirror = _mirror;
+  private def mirror_=(a: Boolean) {
+    _mirror = a
+    repaint
+  }
 
   def blockIncrement() = zoom
 
@@ -113,7 +121,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   private def resize : Unit = {
     val newWidth = shipModel.width + 20
     val newHeight = shipModel.height + 20
-    val minSize = new Dimension( (newWidth + 2) * zoom, (newHeight + 2) * zoom )
+    val minSize = new Dimension( (newWidth) * zoom, (newHeight) * zoom )
     this.minimumSize = minSize
     this.preferredSize = minSize
     this.peer.setSize(minSize)
@@ -138,6 +146,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case ShipSelected( newShip, newHull ) => shipModel = ShipModel( dataModel, newHull, newShip )
     case ZoomSet( newZoom ) => this.zoom = newZoom
     case FiringArcsSet( newShow ) => this.showArcs = newShow
+    case MirroringSet( newMirror ) => this.mirror = newMirror
     case ModuleSelected(mod: ShipModule) => this.mode = PlacementMode(mod)
     case SaveShip => {
       val name = JOptionPane.showInputDialog(this.peer, "Name:",
@@ -165,7 +174,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
           val angleRad = math.atan2(diffY, diffX)
           val angleDeg = math.toDegrees(angleRad)
 
-          shipModel = shipModel.setFacing(p, angleDeg.toFloat)
+          shipModel = mirrorChange( mod.xSize, p, angleDeg,
+              (ship, p, f) => ship.setFacing(p, f.toFloat) )
         }
       }
       if ( mode.isPlacement && oldMouseOver != mouseOver ) {
@@ -178,6 +188,18 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   }
 
   private def dropModule = this.mode = NormalMode
+  
+  def mirrorChange(xSize: Int, p: Point, f: (ShipModel, Point) => ShipModel ) : ShipModel = 
+    mirrorChange(xSize, p, 0.0d, (ship, p, ang) => f(ship, p))
+  def mirrorChange(xSize: Int, p: Point, angleDeg: Double, f : (ShipModel, Point, Double) => ShipModel ) : ShipModel = {
+    val newModel = f( shipModel, p, angleDeg )
+    if ( this.mirror && 
+       ( (p.x          >= shipModel.midPoint + 1) || 
+         (p.x + xSize  <= shipModel.midPoint + 1) ) ) {
+      f( newModel, reflected( p, xSize ),  180.0d - angleDeg )
+    }
+    else newModel
+  }
 
   private def middleClick : Unit = {
     val clickedOn = shipModel.moduleAt(mouseOver)
@@ -185,10 +207,12 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   }
 
   private def rightClick : Unit = {
-    if ( shipModel.isValidPoint(mouseOver)) shipModel = shipModel.removeModule(mouseOver)
+    if ( shipModel.isValidPoint(mouseOver)) {
+      shipModel = mirrorChange(1, mouseOver, _.removeModule(_) )
+    }
     else this.mode = NormalMode
   }
-
+  
   private def leftClick : Unit = {
     mode match {
       case PlacementMode(mod) => {
@@ -198,9 +222,13 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
               JOptionPane.QUESTION_MESSAGE, null,
               dataModel.fighterDesigns.asInstanceOf[Array[Object]], null)
           if ( selected == null ) return
-          else shipModel = shipModel.placeModule(mouseOver, mod, Some(selected.toString))
+          else {
+            shipModel = mirrorChange( mod.xSize, mouseOver, _.placeModule(_, mod, Some(selected.toString)))
+          }
         }
-        else shipModel = shipModel.placeModule(mouseOver, mod)
+        else {
+          shipModel = mirrorChange( mod.xSize, mouseOver, _.placeModule(_, mod) )
+        }
       }
       case _ => {
           val weaponAt = shipModel.weaponAt(mouseOver)
@@ -215,58 +243,86 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   def getRect(x: Int, y: Int, w: Int = 1, h: Int = 1) =
     new Rectangle((x + 10) * zoom + 2, (y + 10) * zoom + 2, (w * zoom) - 4, (h * zoom) - 4)
 
+  
+  def reflected(p: Point, xSize: Int ) : Point = {
+    val mid = shipModel.midPoint
+    if ( p.x < mid ) Point( mid + (mid - p.x) + 1 - (xSize - 1), p.y)
+    else             Point( mid - (p.x - mid) + 1 - (xSize - 1), p.y)
+  }
+  
   override def paint( g2: Graphics2D ) : Unit = {
-     super.paint(g2)
+    super.paint(g2)
+
+    for {
+      (p, slot) <- shipModel.allSlots
+    } drawSlot(g2, p, slot)
+
+    for {
+      (p, module) <- shipModel.allModules
+    } drawModule( g2, p, module )
 
      for {
-       (p, slot) <- shipModel.allSlots
-     } drawSlot(g2, p, slot)
+      (p, module) <- shipModel.allModules.view
+      if ( module.powerDraw > 0)
+      if ( !shipModel.pointsCoveredByModule(p).exists(shipModel.hasPower) )
+    } drawLightningBolt( g2, p, module )
 
-     for {
-       (p, module) <- shipModel.allModules
-     } drawModule( g2, p, module )
+    if ( showArcs ) {
+      for {
+        (p, (facing, module)) <- shipModel.allWeapons.view
+      } drawFiringArc( g2, p, facing, module )
+    }
+    else if ( mode.isFacing ) {
+      val FacingMode(p, _) = mode
+      val (facing, module) = shipModel.allWeapons(p)
+      drawFiringArc( g2, p, facing, module )
+      if ( mirror ) {
+        val p2 = reflected(p, module.xSize)
+        shipModel.allWeapons.get(p2).foreach{ tuple =>
+          val (facing2, module2) = tuple
+          drawFiringArc( g2, p2, facing2, module2 )
+        }
+      }
+    }
+    
+    if (showArcs) {
+      for {
+        (p, module) <- shipModel.allModules
+        shield <- module.shieldData
+      } drawShieldRadius( g2, p, module, shield )
+    } 
+    if (mode.isPlacement) {
+      val PlacementMode(module) = mode
+      module.shieldData.foreach(s => drawShieldRadius(g2, mouseOver, module, s))
+    }
 
-     for {
-       (p, module) <- shipModel.allModules.view
-       if ( module.powerDraw > 0)
-       if ( !shipModel.pointsCoveredByModule(p).exists(shipModel.hasPower) )
-     } drawLightningBolt( g2, p, module )
-
-     if ( showArcs ) {
-       for {
-         (p, (facing, module)) <- shipModel.allWeapons.view
-       } drawFiringArc( g2, p, facing, module )
-     }
-     else if ( mode.isFacing ) {
-       val FacingMode(p, _) = mode
-       val (facing, module) = shipModel.allWeapons(p)
-       drawFiringArc( g2, p, facing, module )
-     }
-     
-     if (showArcs) {
-       for {
-         (p, module) <- shipModel.allModules
-         shield <- module.shieldData
-       } drawShieldRadius( g2, p, module, shield )
-     } 
-     if (mode.isPlacement) {
-       val PlacementMode(module) = mode
-       module.shieldData.foreach(s => drawShieldRadius(g2, mouseOver, module, s))
-     }
-
-/*     if ( midPoint != -1 ) {
-       g2.setColor(Color.BLACK)
-       g2.drawLine(midPoint * zoom, 0, midPoint * zoom, this.size.height)
-     }*/
+    if ( mirror ) {
+      val midpointLine = shipModel.midPoint + 11
+      if ( midpointLine != -1 ) {
+        g2.setColor(Color.BLACK)
+        g2.setStroke(new BasicStroke(1))
+        g2.drawLine(midpointLine * zoom, 0, midpointLine * zoom, this.size.height)
+      }
+    }
   }
 
   private def drawSlot(g2: Graphics2D, p: Point, slot: HullModuleSlot ): Unit = {
     val Point(x, y) = p
     val rect = getRect(x, y)
+    
+    val xSize = mode.module.map(_.xSize).getOrElse(1)
+    val ySize = mode.module.map(_.ySize).getOrElse(1)
 
-    val xRange = mouseOver.x until mouseOver.x + mode.module.map(_.xSize).getOrElse(1)
-    val yRange = mouseOver.y until mouseOver.y + mode.module.map(_.ySize).getOrElse(1)
-    val blockColor = if ( shipModel.slotsInRange(xRange, yRange).contains(p) ) mouseOverColor
+    val xRange = mouseOver.x until mouseOver.x + xSize
+    val yRange = mouseOver.y until mouseOver.y + ySize
+    val mirror = if ( this.mirror && 
+                    ( (mouseOver.x          >= shipModel.midPoint + 1) || 
+                      (mouseOver.x + xSize  <= shipModel.midPoint + 1) ) ) reflected(mouseOver, xSize )
+                 else mouseOver
+    val xRangeMirror = mirror.x until mirror.x + xSize
+    val yRangeMirror = mirror.y until mirror.y + ySize
+    val blockColor = if ( xRange.contains(p.x) && yRange.contains(p.y) ) mouseOverColor
+                else if ( xRangeMirror.contains(p.x) && yRangeMirror.contains(p.y)) mouseOverColor 
                 else if ( !mode.isPlacement ) Color.WHITE
                 else if ( shipModel.meetsRestrictions(mode.module.get, p) ) canPlaceColor
                 else canNotPlaceColor

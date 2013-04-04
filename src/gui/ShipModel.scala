@@ -34,7 +34,7 @@ object ShipModel {
         case _ => dummy
       }
 
-      ModelSlot( slot, module, false, shipSlot.map(_.facing).getOrElse(0.0f),
+      ModelSlot( slot, module, false, shipSlot.map(_.facing).getOrElse(90.0f),
           shipSlot.flatMap(_.slotOptions) )
     }
 
@@ -52,7 +52,7 @@ object ShipModel {
   }
 
   def apply( dataModel: DataModel, hull: Hull ) : ShipModel = {
-    val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 0.0f, None))
+    val shipModules = hull.moduleSlotList.map( hullSlot => ShipModuleSlot(hullSlot.pos, "Dummy", 90.0f, None))
     val ship = Ship("New " + hull.name, hull.role, None, None, hull.race, hull.hullId, shipModules, dataModel.loadedMods)
     apply( dataModel, hull, ship )
   }
@@ -130,7 +130,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
 
     val slotToUpdate = moduleToRemove.head
 
-    val toBeReplaced = moduleToRemove.mapValues(_.copy(module = dummy, slotOption = None) )
+    val toBeReplaced = moduleToRemove.mapValues(_.copy(module = dummy, slotOption = None, facing = 90.0f) )
     copy( slots = slots ++ toBeReplaced ).computePowerGrid
   }
 
@@ -158,7 +158,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
     val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
     val removed : Map[Point, ModelSlot] = toBeRemoved.map{ tuple =>
       val (p, slot) = tuple
-      (p, slot.copy( module = dummy, slotOption = None))
+      (p, slot.copy( module = dummy, slotOption = None, facing = 90.0f))
     }
 
     val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = newModule, slotOption = option ) )
@@ -170,7 +170,10 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
 
   def setFacing( p: Point, f: Float ) : ShipModel = {
     val slot = slots(p)
-    copy( slots = slots + (p -> slot.copy( facing = f )) )
+    if ( slot.module.weaponData.isDefined )
+      copy( slots = slots + (p -> slot.copy( facing = f )) )
+    else
+      this
   }
 
   def withCombatState( cs: String ) = copy( combatState = cs )
