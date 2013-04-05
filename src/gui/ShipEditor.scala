@@ -14,7 +14,7 @@ import scala.swing.event.MouseMoved
 import scala.swing.event.MousePressed
 import data.general.DataModel
 import data.general.Point
-import gui.MouseClickWrapper.click2wrapper
+import gui.MouseEventWrappers._
 import scala.swing.event.MouseReleased
 import scala.swing.event.MouseDragged
 import javax.swing.JOptionPane
@@ -24,6 +24,7 @@ import data.xml.ShieldData
 import data.xml.HullModuleSlot
 import data.general.ReloadFromModel
 import data.xml.ShipModule
+import scala.swing.event.MouseEvent
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -45,7 +46,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     override val isPlacement = true
     override def module = Some(mod)
   }
-  case class FacingMode(p: Point, mod: ShipModule) extends EditorMode {
+  case class FacingMode(mods: Set[(Point, ShipModule)]) extends EditorMode {
     override val isFacing = true
   }
 
@@ -137,6 +138,53 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   def getMouseOver( loc: AwtPoint ) = 
     Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
   
+  def centerMod( c: Int, size: Int ) : Double = ((c + size.toFloat / 2) + 10) * zoom 
+    
+  def toAwtPoint( p: Point, xSize: Int, ySize: Int) = 
+    new AwtPoint( centerMod(p.x, xSize).toInt, centerMod(p.y, ySize).toInt )
+    
+  def getAngle( mod: AwtPoint, mouse: AwtPoint ) : Double = {
+    val diffX = mouse.x - mod.x
+    val diffY = mod.y - mouse.y
+
+    val angleRad = math.atan2(diffY, diffX)
+    math.toDegrees(angleRad)
+  }
+  
+  def pointToMouse( mouse: AwtPoint, p: Point, mod: ShipModule) : Double = 
+    getAngle( toAwtPoint( p, mod.xSize, mod.ySize), mouse )
+    
+  def pointAwayFromMouse( mouse: AwtPoint, p: Point, mod: ShipModule) : Double =
+    (pointToMouse(mouse, p, mod) + 180.0d) % 360.0d
+    
+  def shareDirection : (AwtPoint, Point, ShipModule) => Double = {
+    val FacingMode(mods) = mode
+    val seq = mods.toSeq
+    
+    val minX = seq.map(_._1.x).min
+    val minY = seq.map(_._1.y).min
+    
+    val maxX = seq.map(t => t._1.x + t._2.xSize).max
+    val maxY = seq.map(t => t._1.y + t._2.ySize).max
+    
+    val sizeX = maxX - minX
+    val sizeY = maxY - minY
+    
+    val baseX = centerMod( minX, sizeX )
+    val baseY = centerMod( minY, sizeY )
+    
+    val base = new AwtPoint( baseX.toInt, baseY.toInt )
+    (mouse, p, ship) => getAngle( base, mouse )
+  }
+  
+    
+  def changeFacing( mouse: AwtPoint )( ang: (AwtPoint, Point, ShipModule) => Double)
+      ( model: ShipModel, pair: (Point, ShipModule)) : ShipModel = {
+    val (p, mod) = pair
+    mirrorChange( model, mod.xSize, p, ang(mouse, p, mod),
+      (ship, p, f) => ship.setFacing(p, f.toFloat) )
+  }
+    
   reactions += {
     case ReloadFromModel => {
       shipModel = shipModel.reload(dataModel)
@@ -159,43 +207,38 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     }
 
     case MouseMoved(comp, loc, _) if comp == this => mouseOver = getMouseOver(loc)
-    case MouseDragged(comp, loc, _) if comp == this => {
+    case e@MouseDragged(comp, loc, _) if comp == this => {
       val oldMouseOver = mouseOver
       mouseOver = getMouseOver(loc)
       if (  mode.isFacing ) {
-        val FacingMode(p, mod) = mode
-        if ( mod.moduleType == "Turret" ) {
-          val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
-          val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
-
-          val diffX = loc.x - baseX
-          val diffY = baseY - loc.y
-
-          val angleRad = math.atan2(diffY, diffX)
-          val angleDeg = math.toDegrees(angleRad)
-
-          shipModel = mirrorChange( mod.xSize, p, angleDeg,
-              (ship, p, f) => ship.setFacing(p, f.toFloat) )
-        }
+        val FacingMode(mods) = mode
+        val filtered = mods.filter(_._2.moduleType == "Turret")
+        val angleFunc =
+          if ( e.isAltDown ) pointAwayFromMouse _
+          else if ( e.isCtrlDown ) pointToMouse _
+          else shareDirection
+        shipModel = filtered.foldLeft(shipModel)(changeFacing(loc)(angleFunc) _)
       }
       if ( mode.isPlacement && oldMouseOver != mouseOver ) {
-        leftClick
+        leftClick(e)
       }
     }
     case cl: MousePressed if cl.isRight => rightClick
     case cl: MousePressed if cl.isMiddle => middleClick
-    case cl: MousePressed if cl.isLeft => leftClick
+    case cl: MousePressed if cl.isLeft => leftClick(cl)
   }
-
+  
   private def dropModule = this.mode = NormalMode
   
-  def mirrorChange(xSize: Int, p: Point, f: (ShipModel, Point) => ShipModel ) : ShipModel = 
-    mirrorChange(xSize, p, 0.0d, (ship, p, ang) => f(ship, p))
-  def mirrorChange(xSize: Int, p: Point, angleDeg: Double, f : (ShipModel, Point, Double) => ShipModel ) : ShipModel = {
-    val newModel = f( shipModel, p, angleDeg )
+  def mirrorChange(model: ShipModel, xSize: Int, p: Point,
+      f: (ShipModel, Point) => ShipModel ) : ShipModel = 
+    mirrorChange(model, xSize, p, 0.0d, (ship, p, ang) => f(ship, p))
+  def mirrorChange(model: ShipModel, xSize: Int, p: Point, angleDeg: Double,
+      f : (ShipModel, Point, Double) => ShipModel ) : ShipModel = {
+    val newModel = f( model, p, angleDeg )
     if ( this.mirror && 
-       ( (p.x          >= shipModel.midPoint + 1) || 
-         (p.x + xSize  <= shipModel.midPoint + 1) ) ) {
+       ( (p.x          >= model.midPoint + 1) || 
+         (p.x + xSize  <= model.midPoint + 1) ) ) {
       f( newModel, reflected( p, xSize ),  180.0d - angleDeg )
     }
     else newModel
@@ -208,12 +251,12 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
   private def rightClick : Unit = {
     if ( shipModel.isValidPoint(mouseOver)) {
-      shipModel = mirrorChange(1, mouseOver, _.removeModule(_) )
+      shipModel = mirrorChange(shipModel, 1, mouseOver, _.removeModule(_) )
     }
     else this.mode = NormalMode
   }
   
-  private def leftClick : Unit = {
+  private def leftClick(e: MouseEvent) : Unit = {
     mode match {
       case PlacementMode(mod) => {
         if ( mod.hangarData.isDefined && !mod.hangarData.get.isSupplyBay &&
@@ -223,19 +266,28 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
               dataModel.fighterDesigns.asInstanceOf[Array[Object]], null)
           if ( selected == null ) return
           else {
-            shipModel = mirrorChange( mod.xSize, mouseOver, _.placeModule(_, mod, Some(selected.toString)))
+            shipModel = mirrorChange( shipModel, mod.xSize, mouseOver, _.placeModule(_, mod, Some(selected.toString)))
           }
         }
         else {
-          shipModel = mirrorChange( mod.xSize, mouseOver, _.placeModule(_, mod) )
+          shipModel = mirrorChange( shipModel, mod.xSize, mouseOver, _.placeModule(_, mod) )
         }
       }
       case _ => {
-          val weaponAt = shipModel.weaponAt(mouseOver)
-                  weaponAt match {
-                  case Some( (point, mod) ) => mode = new FacingMode(point, mod)
-                  case None => Unit
+        val weaponAt = shipModel.weaponAt(mouseOver)
+        weaponAt.foreach{ tuple =>
+          val (point, mod) = tuple
+          val mods : Set[(Point, ShipModule)] = mode match {
+            case FacingMode(mods) => mods
+            case _ => Set()
           }
+          
+          val newMods = if ( e.isShiftDown ) {
+            if ( mods.contains(tuple) ) mods - tuple
+            else mods + tuple
+          } else Set(tuple)
+          mode = FacingMode(newMods)
+        }
       }
     }
   }
@@ -273,14 +325,18 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
       } drawFiringArc( g2, p, facing, module )
     }
     else if ( mode.isFacing ) {
-      val FacingMode(p, _) = mode
-      val (facing, module) = shipModel.allWeapons(p)
-      drawFiringArc( g2, p, facing, module )
-      if ( mirror ) {
-        val p2 = reflected(p, module.xSize)
-        shipModel.allWeapons.get(p2).foreach{ tuple =>
-          val (facing2, module2) = tuple
-          drawFiringArc( g2, p2, facing2, module2 )
+      val FacingMode(mods) = mode
+      for {
+        (p, _) <- mods
+        (facing, module) = shipModel.allWeapons(p)
+      } {
+        drawFiringArc( g2, p, facing, module )
+        if ( mirror ) {
+          val p2 = reflected(p, module.xSize)
+          shipModel.allWeapons.get(p2).foreach{ tuple =>
+            val (facing2, module2) = tuple
+            drawFiringArc( g2, p2, facing2, module2 )
+          }
         }
       }
     }
