@@ -25,6 +25,9 @@ import data.xml.HullModuleSlot
 import data.general.ReloadFromModel
 import data.xml.ShipModule
 import scala.swing.event.MouseEvent
+import scala.swing.event.KeyTyped
+import scala.swing.event.KeyReleased
+import scala.swing.event.Key
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -130,10 +133,11 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     repaint
   }
 
-  background = Color.WHITE
+  focusable = true
 
   listenTo(mouse.moves)
   listenTo(mouse.clicks)
+  listenTo(keys)
 
   def getMouseOver( loc: AwtPoint ) = 
     Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
@@ -177,6 +181,20 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     (mouse, p, ship) => getAngle( base, mouse )
   }
   
+  val keyToAngle : PartialFunction[Key.Value, Double] = {
+          case Key.Numpad6 =>   0d
+          case Key.Numpad9 =>  45d
+          case Key.Numpad8 =>  90d
+          case Key.Numpad7 => 135d
+          case Key.Numpad4 => 180d
+          case Key.Numpad1 => 225d
+          case Key.Numpad2 => 270d
+          case Key.Numpad3 => 315d
+        }
+  
+  def constantAngle( angle: Double ) : (AwtPoint, Point, ShipModule) => Double = {
+    (mouse, p, ship) => angle
+  }
     
   def changeFacing( mouse: AwtPoint )( ang: (AwtPoint, Point, ShipModule) => Double)
       ( model: ShipModel, pair: (Point, ShipModule)) : ShipModel = {
@@ -208,6 +226,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
     case MouseMoved(comp, loc, _) if comp == this => mouseOver = getMouseOver(loc)
     case e@MouseDragged(comp, loc, _) if comp == this => {
+      this.requestFocus
       val oldMouseOver = mouseOver
       mouseOver = getMouseOver(loc)
       if (  mode.isFacing ) {
@@ -223,9 +242,20 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         leftClick(e)
       }
     }
-    case cl: MousePressed if cl.isRight => rightClick
-    case cl: MousePressed if cl.isMiddle => middleClick
-    case cl: MousePressed if cl.isLeft => leftClick(cl)
+    case cl: MousePressed if cl.isRight => { this.requestFocus; rightClick }
+    case cl: MousePressed if cl.isMiddle => { this.requestFocus; middleClick }
+    case cl: MousePressed if cl.isLeft => { this.requestFocus; leftClick(cl) }
+    
+    case keyReleased : KeyReleased => {
+      if ( mode.isFacing && keyToAngle.isDefinedAt(keyReleased.key)) {
+        val FacingMode(mods) = mode
+        
+        val angle = keyToAngle(keyReleased.key)
+        
+        val filtered = mods.filter(_._2.moduleType == "Turret")
+        shipModel = filtered.foldLeft(shipModel)(changeFacing(null)(constantAngle(angle)) _)
+      }
+    }
   }
   
   private def dropModule = this.mode = NormalMode
