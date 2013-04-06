@@ -48,7 +48,7 @@ object ShipModel {
                      pointSlots.map( tuple => ( Point(tuple._1.x - minX, tuple._1.y - minY), tuple._2 ) )
                    }
 
-    new ShipModel( hull, ship, ship.combatState.getOrElse("AttackRuns"), minSlots ).computePowerGrid
+    new ShipModel( hull, ship, ship.combatState.getOrElse(AttackRuns), minSlots ).computePowerGrid
   }
 
   def apply( dataModel: DataModel, hull: Hull ) : ShipModel = {
@@ -58,7 +58,7 @@ object ShipModel {
   }
 }
 
-class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val slots: Map[Point, ModelSlot]) {
+class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, val slots: Map[Point, ModelSlot]) {
   val (width, height) = if (slots.isEmpty) (0, 0)
                         else {
                           val width = slots.keys.maxBy(_.x).x
@@ -74,7 +74,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
   }
 
   private def copy( hull: Hull = this.hull, ship: Ship = this.ship,
-      combatState: String = this.combatState, slots: Map[Point, ModelSlot] = this.slots ) : ShipModel =
+      combatState: CombatState = this.combatState, slots: Map[Point, ModelSlot] = this.slots ) : ShipModel =
     return new ShipModel( hull, ship, combatState, slots )
 
   def meetsRestrictions( module: ShipModule, point: Point ) : Boolean = meetsRestrictions(module, slots(point))
@@ -176,7 +176,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: String, val sl
       this
   }
 
-  def withCombatState( cs: String ) = copy( combatState = cs )
+  def withCombatState( cs: CombatState ) = copy( combatState = cs )
   def withName( name: String ) = copy( ship = ship.copy( name = name ) )
   
   def reload( data: DataModel ) : ShipModel = {

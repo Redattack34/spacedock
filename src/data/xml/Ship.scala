@@ -5,10 +5,8 @@ import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.URL
-
 import scala.Array.canBuildFrom
 import scala.xml.PrettyPrinter
-
 import com.codecommit.antixml.Attributes
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Group
@@ -19,18 +17,19 @@ import com.codecommit.antixml.XML
 import com.codecommit.antixml.stringTupleToQNameTuple
 import com.codecommit.antixml.text
 import com.google.common.base.Charsets
-
 import data.general.DataModel
 import data.general.FileExtension._
 import data.xml.Position.positions
 import gui.ModelSlot
 import gui.ShipModel
+import gui.CombatState
+import gui.CombatState._
 
 
 case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
     slotOptions: Option[String] )
     
-case class Ship( name: String, role: String, combatState: Option[String], boardingDefense: Option[Int],
+case class Ship( name: String, role: String, combatState: Option[CombatState], boardingDefense: Option[Int],
     race: String, hull: String, moduleSlotList: Seq[ShipModuleSlot], requiredModsList: Seq[String]){
 }
 
@@ -62,8 +61,8 @@ object Ship extends XmlLoader[Ship]{
     split = hull.split('/')
     race = split(0)
     hullId = split(1)
-  } yield Ship( name, role, combatState.headOption, boardingDefense.headOption.map(_.toInt),
-      race, hullId, modules, requiredMods)
+  } yield Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
+      boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
 
   def directory(base: File) = base / 'StarterShips
   

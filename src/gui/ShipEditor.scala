@@ -221,7 +221,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case FiringArcsSet( newShow ) => this.showArcs = newShow
     case MirroringSet( newMirror ) => this.mirror = newMirror
     case ShowEmptySlots( ) => this.showEmpty = 100
-    case ModuleSelected(mod: ShipModule) => this.mode = PlacementMode(mod)
+    case ModuleSelected(mod) => this.mode = PlacementMode(mod)
+    case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
       val name = JOptionPane.showInputDialog(this.peer, "Name:",
           "Save Ship", JOptionPane.QUESTION_MESSAGE)

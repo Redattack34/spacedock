@@ -18,6 +18,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import data.general.ReloadFromModel
 import scala.swing.event.ButtonClicked
 import scala.swing.Button
+import CombatState._
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
@@ -25,7 +26,7 @@ case class ZoomSet( zoom: Boolean ) extends Event
 case class FiringArcsSet( showFiringArcs: Boolean ) extends Event
 case class MirroringSet( mirror: Boolean ) extends Event
 case class ShowEmptySlots( ) extends Event
-case class CombatStateSet( str: String ) extends Event
+case class CombatStateSet( state: CombatState ) extends Event
 case object SaveShip extends Event
 case object OpenModWindow extends Event
 
@@ -135,11 +136,11 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ShipMenuItem(ship, hull)) => {
       publish( ShipSelected(ship, hull))
       ship.combatState match {
-        case Some("Artillery") => artillery.selected = true
-        case Some("HoldPosition") => holdPosition.selected = true
-        case Some("Evade") => evade.selected = true
-        case Some("OrbitLeft") => orbitPort.selected = true
-        case Some("OrbitRight") => orbitStarboard.selected = true
+        case Some(Artillery) => artillery.selected = true
+        case Some(HoldPosition) => holdPosition.selected = true
+        case Some(Evade) => evade.selected = true
+        case Some(OrbitPort) => orbitPort.selected = true
+        case Some(OrbitStarboard) => orbitStarboard.selected = true
         case _ => attackRuns.selected = true
       }
     }
@@ -169,12 +170,12 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(MirrorItem) => publish( MirroringSet( MirrorItem.selected ) )
     case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots( ) )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
-    case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet("AttackRuns"))
-    case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet("Artillery"))
-    case ButtonClicked(rb) if rb == holdPosition => publish( CombatStateSet("HoldPosition"))
-    case ButtonClicked(rb) if rb == orbitPort => publish( CombatStateSet("OrbitLeft"))
-    case ButtonClicked(rb) if rb == orbitStarboard => publish( CombatStateSet("OrbitRight"))
-    case ButtonClicked(rb) if rb == evade => publish( CombatStateSet("Evade"))
+    case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet(AttackRuns))
+    case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet(Artillery))
+    case ButtonClicked(rb) if rb == holdPosition => publish( CombatStateSet(HoldPosition))
+    case ButtonClicked(rb) if rb == orbitPort => publish( CombatStateSet(OrbitPort))
+    case ButtonClicked(rb) if rb == orbitStarboard => publish( CombatStateSet(OrbitStarboard))
+    case ButtonClicked(rb) if rb == evade => publish( CombatStateSet(Evade))
     case ReloadFromModel => {
       shipsMenu.contents.clear
       loadMenus
