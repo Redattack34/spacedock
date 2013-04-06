@@ -1,15 +1,13 @@
 package data.xml
 
 import java.io.File
-
 import scala.Array.canBuildFrom
-
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
-
 import data.general.FileExtension._
+import gui.Restrictions._
 
 case class ShieldData(shieldPower: Int, rechargeDelay: Float, rechargeRate: Float, radius: Int)
 
@@ -26,7 +24,7 @@ case class ShipModule(
     nameIndex: Int, descriptionIndex: Int, uid: String,
     
     //Module structure stuff
-    xSize: Int, ySize: Int, moduleType: String, restrictions: String,
+    xSize: Int, ySize: Int, moduleType: String, restrictions: ModuleRestrictions,
     iconTexturePath: String,
     
     //Game stats
@@ -103,7 +101,8 @@ object Module extends XmlLoader[ShipModule] {
     } yield ShipModule( name.toInt, description.toInt, uid,
         xSize.headOption.map(_.toInt).getOrElse(1),
         ySize.headOption.map(_.toInt).getOrElse(1), moduleType,
-        restrictions, iconTexturePath, cost.toFloat, mass.toFloat, health.toInt,
+        getModuleFromString(restrictions), iconTexturePath, cost.toFloat,
+        mass.toFloat, health.toInt,
         powerDraw.headOption.map(_.toFloat).getOrElse(0.0f),
         bonusRepair.headOption.map(_.toInt),
         ordnanceCapacity.headOption.map(_.toInt),
@@ -113,6 +112,6 @@ object Module extends XmlLoader[ShipModule] {
 
   def directory(base: File) = base / 'ShipModules
   
-  val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", "", "", 0.0f, 0, 0, 0,
+  val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", ModIOE, "", 0.0f, 0, 0, 0,
       None, None, None, None, None, None, None, None)
 }

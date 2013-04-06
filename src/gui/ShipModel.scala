@@ -78,17 +78,8 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     return new ShipModel( hull, ship, combatState, slots )
 
   def meetsRestrictions( module: ShipModule, point: Point ) : Boolean = meetsRestrictions(module, slots(point))
-  private def meetsRestrictions( module: ShipModule, slot: ModelSlot ) : Boolean = {
-    val modSlot = slot.hullSlot
-
-    module.restrictions match {
-      case "I" => modSlot.restrictions.contains("I")
-      case "O" => modSlot.restrictions.contains("O")
-      case "IO" => modSlot.restrictions.contains("I") || modSlot.restrictions.contains("O")
-      case "E" =>  modSlot.restrictions == "E"
-      case "IOE" => true
-    }
-  }
+  private def meetsRestrictions( module: ShipModule, slot: ModelSlot ) : Boolean =
+    module.restrictions.matches( slot.hullSlot.restrictions )
 
   def slotsInRange( xRange: Range, yRange: Range ) = {
     val buffer = mutable.Map[Point, HullModuleSlot]()

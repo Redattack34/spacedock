@@ -10,8 +10,9 @@ import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
 import data.xml.Position.positions
 import scala.xml.factory.XMLLoader
+import gui.Restrictions._
 
-case class HullModuleSlot( pos: Position, restrictions: String, slotOptions: Option[String] )
+case class HullModuleSlot( pos: Position, restrictions: SlotRestrictions, slotOptions: Option[String] )
 case class ThrusterZone(pos: Position, scale: Int)
 
 case class Hull( name: String, hullId: String, role: String, race: String, iconPath: String,
@@ -25,7 +26,7 @@ object Hull extends XmlLoader[Hull] {
     position <- positions( moduleSlot )
     restriction <- moduleSlot \ 'Restrictions \ text
     slotOptions = moduleSlot \ 'SlotOptions \ text
-  } yield HullModuleSlot(position, restriction, slotOptions.headOption )
+  } yield HullModuleSlot(position, getSlotFromString(restriction), slotOptions.headOption )
 
   private def thrusters(e : Elem) : Seq[ThrusterZone] = for {
     thrusterList <- e \ 'ThrusterList

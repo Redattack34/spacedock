@@ -437,7 +437,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
     g2.setColor(Color.BLACK)
     g2.setFont( g2.getFont().deriveFont(7.0f + (2 * (zoom/16))))
-    g2.drawString(slot.restrictions, rect.x + 2, rect.y + 8 + (2 * (zoom/16)))
+    g2.drawString(slot.restrictions.str, rect.x + 2, rect.y + 8 + (2 * (zoom/16)))
   }
 
   private def drawModule( g2: Graphics2D, p: Point, mod: ShipModule ) : Unit = {

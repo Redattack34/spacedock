@@ -64,14 +64,6 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
     label
   }
 
-  def restrictionsString( mod : ShipModule ) : String = mod.restrictions match {
-    case "I" => "I or IO Only"
-    case "O" => "O or IO Only"
-    case "IO" => "I or O or IO"
-    case "E" => "E Only"
-    case "IOE" => "I, O, IO, or E"
-  }
-
   def showIf[T]( b: Boolean, opt: Option[T])( labels: Label*)(f : T => Unit ) : Unit = {
     for ( label <- labels ) { label.visible = b }
     opt.foreach(f)
@@ -84,7 +76,7 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
     case ModuleSelected(mod) => {
       moduleName.text = token(mod.nameIndex)
       description.text = "<html>" + token(mod.descriptionIndex) + "</html>"
-      restrictions.text = "Restrictions: " + restrictionsString(mod)
+      restrictions.text = "Restrictions: " + mod.restrictions.description
       image.icon = moduleImage(mod)
       itemSize.text = "Size: " + mod.xSize + "x" + mod.ySize
       mass.text = "Mass: " + mod.mass

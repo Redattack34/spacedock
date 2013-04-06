@@ -96,7 +96,7 @@ object Ship extends XmlLoader[Ship]{
         getTextNode('Health, 0),
         getTextNode('Shield_Power, 0),
         getTextNode('facing, slot.facing - 90.0),
-        getTextNode('Restrictions, slot.hullSlot.restrictions)
+        getTextNode('Restrictions, slot.hullSlot.restrictions.str)
     ))
     
     if ( slot.slotOption.isDefined ) {
