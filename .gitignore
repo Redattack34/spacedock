@@ -3,3 +3,4 @@ bin
 .cache
 config
 manifest
+launch4j.log
