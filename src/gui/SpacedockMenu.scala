@@ -16,12 +16,15 @@ import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 import data.general.ReloadFromModel
+import scala.swing.event.ButtonClicked
+import scala.swing.Button
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
 case class ZoomSet( zoom: Boolean ) extends Event
 case class FiringArcsSet( showFiringArcs: Boolean ) extends Event
 case class MirroringSet( mirror: Boolean ) extends Event
+case class ShowEmptySlots( ) extends Event
 case class CombatStateSet( str: String ) extends Event
 case object SaveShip extends Event
 case object OpenModWindow extends Event
@@ -33,6 +36,9 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object ZoomMenuItem extends CheckBox("Zoom  ")
   case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs and Shields  ")
   case object MirrorItem extends CheckBox("Mirror Changes  ")
+  case object ShowEmptySlotsItem extends Button("Highlight Empty Slots  ") {
+    contentAreaFilled = false
+  }
   
   case object LoadShipFromFileItem extends MenuItem("Load From File")
   case object LoadShipFromUrlItem extends MenuItem("Load From URL")
@@ -102,10 +108,10 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     }
   }
   
-  contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, attackRuns,
-      artillery, holdPosition, orbitPort, orbitStarboard, evade)
-  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, attackRuns, artillery,
-      holdPosition, orbitPort, orbitStarboard, evade)
+  contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
+      attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
+  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
+      attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
 
   def shipLoaded(shipOpt: Option[Ship]) = {
     if ( shipOpt.isEmpty ) {
@@ -161,6 +167,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )
     case ButtonClicked(MirrorItem) => publish( MirroringSet( MirrorItem.selected ) )
+    case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots( ) )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
     case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet("AttackRuns"))
     case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet("Artillery"))

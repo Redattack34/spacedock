@@ -121,7 +121,14 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
       repaint
     }
   }
-
+  
+  private var _showEmpty = 0
+  private def showEmpty = _showEmpty
+  private def showEmpty_=(newShow: Int) = {
+    this._showEmpty = newShow
+    repaint
+  }
+  
   private def resize : Unit = {
     val newWidth = shipModel.width + 20
     val newHeight = shipModel.height + 20
@@ -213,6 +220,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case ZoomSet( newZoom ) => this.zoom = newZoom
     case FiringArcsSet( newShow ) => this.showArcs = newShow
     case MirroringSet( newMirror ) => this.mirror = newMirror
+    case ShowEmptySlots( ) => this.showEmpty = 100
     case ModuleSelected(mod: ShipModule) => this.mode = PlacementMode(mod)
     case SaveShip => {
       val name = JOptionPane.showInputDialog(this.peer, "Name:",
@@ -390,6 +398,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         g2.drawLine(midpointLine * zoom, 0, midpointLine * zoom, this.size.height)
       }
     }
+    
+    if ( showEmpty > 0) { showEmpty -= 1 }
   }
 
   private def drawSlot(g2: Graphics2D, p: Point, slot: HullModuleSlot ): Unit = {
@@ -415,7 +425,11 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     g2.setColor(blockColor)
     g2.fill(rect)
 
-    val squareColor = if ( shipModel.hasPower(p) ) Color.YELLOW
+    val squareColor = if ( showEmpty > 0 && shipModel.moduleAt(p).isEmpty ) {
+                        if ( (showEmpty/5) % 2 == 0 ) Color.RED
+                        else Color.BLACK
+                      }
+                      else if ( shipModel.hasPower(p) ) Color.YELLOW
                       else Color.BLACK
     g2.setColor(squareColor)
     g2.draw(rect)
