@@ -14,8 +14,10 @@ import javax.swing.tree.TreePath
 import javax.swing.tree.TreeSelectionModel
 import data.general.ReloadFromModel
 import javax.swing.tree.DefaultTreeModel
+import java.awt.event.MouseListener
+import java.awt.event.MouseEvent
 
-class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListener {
+class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
 
   import model._
 
@@ -92,10 +94,10 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
 
   val tree = new JTree(root)
   tree.setRootVisible(false)
-  tree.addTreeSelectionListener(this)
+  tree.addMouseListener(this)
   tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
-
-  override def valueChanged( event: TreeSelectionEvent ) = {
+  
+  override def mouseClicked(ev: MouseEvent) {
     val selected = tree.getLastSelectedPathComponent
     selected match {
       case node: ModuleNode => publish( ModuleSelected(node.mod))
@@ -103,6 +105,11 @@ class ModuleList( model: DataModel ) extends BorderPanel with TreeSelectionListe
     }
   }
 
+  override def mousePressed(ev: MouseEvent) = Unit
+  override def mouseReleased(ev: MouseEvent) = Unit
+  override def mouseEntered(ev: MouseEvent) = Unit
+  override def mouseExited(ev: MouseEvent) = Unit
+  
   add(new ScrollPane(Component.wrap(tree)), BorderPanel.Position.Center)
 
   reactions += {
