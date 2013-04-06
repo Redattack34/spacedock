@@ -1,5 +1,6 @@
 package data.xnb
 
+import java.awt.Image
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
@@ -11,15 +12,11 @@ import ImageFormat.ImageFormat
 import InputStreamUtils.read7BitInt
 import InputStreamUtils.readInt
 import InputStreamUtils.readString
-import java.awt.Image
 import javax.imageio.ImageIO
+import javax.imageio.stream.ImageOutputStream
 import java.awt.image.BufferedImage
-import java.io.FileOutputStream
-import javax.imageio.stream.FileImageOutputStream
-import java.util.Arrays
-import javax.swing.JDialog
-import javax.swing.JOptionPane
-import javax.swing.ImageIcon
+import java.io.FileInputStream
+import com.google.common.primitives.UnsignedBytes
 
 object XnbReader {
 
@@ -108,4 +105,21 @@ object XnbReader {
     either.left.map(ex => new IOException( "Failed to read texture: " + f.getAbsolutePath(), ex))
   }
 
+  def main(args: Array[String]) {
+    if ( args.length < 1 ) {
+      println("Usage: XnbReader C:/Path/To/Dir/With/XNB/Files")
+      return
+    }
+    
+    val dir = new File(args(0))
+    for {
+      file <- dir.listFiles
+      if ( file.getName().endsWith("xnb") )
+      either = read(file)
+      outFile = new File( file.getAbsolutePath().replace(".xnb", ".png"))
+    } {
+      if ( either.isLeft ) either.left.get.printStackTrace
+      else ImageIO.write(either.right.get.asInstanceOf[BufferedImage], "png", outFile)
+    }
+  }
 }
