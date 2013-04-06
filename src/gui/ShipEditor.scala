@@ -28,6 +28,7 @@ import scala.swing.event.MouseEvent
 import scala.swing.event.KeyTyped
 import scala.swing.event.KeyReleased
 import scala.swing.event.Key
+import scala.annotation.tailrec
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -220,7 +221,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case ZoomSet( newZoom ) => this.zoom = newZoom
     case FiringArcsSet( newShow ) => this.showArcs = newShow
     case MirroringSet( newMirror ) => this.mirror = newMirror
-    case ShowEmptySlots( ) => this.showEmpty = 100
+    case ShowEmptySlots => this.showEmpty = 100
+    case FillEmptySlots => fillEmptySlots()
     case ModuleSelected(mod) => this.mode = PlacementMode(mod)
     case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
@@ -329,6 +331,25 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         }
       }
     }
+  }
+  
+  def fillEmptySlots() {
+    if ( !mode.isPlacement ) return;
+    val PlacementMode(mod) = mode
+    var model = shipModel
+    
+    val leftRange = (0 to shipModel.midPoint + 1)
+    val rightRange = (shipModel.width to shipModel.midPoint by -1)
+    val xRange = leftRange.toSeq ++ rightRange
+    
+    for( y <- 0 to shipModel.height; x <- xRange ) {
+      if ( model.canPlace(Point(x, y), mod) &&
+           model.modulesOverlapping(x until x + mod.xSize, y until y + mod.ySize ).isEmpty
+          ) {
+        model = model.placeModule(Point(x, y), mod)
+      }
+    }
+    this.shipModel = model
   }
 
   def getRect(x: Int, y: Int, w: Int = 1, h: Int = 1) =

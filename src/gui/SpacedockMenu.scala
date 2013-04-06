@@ -1,31 +1,30 @@
 package gui
 
-import java.net.URL
-import scala.swing.ButtonGroup
-import scala.swing.CheckBox
-import scala.swing.Menu
-import scala.swing.MenuBar
-import scala.swing.MenuItem
-import scala.swing.RadioButton
-import scala.swing.event.ButtonClicked
-import scala.swing.event.Event
 import data.general.DataModel
-import data.xml.Hull
+import scala.swing.RadioButton
 import data.xml.Ship
-import javax.swing.JFileChooser
+import data.xml.Hull
 import javax.swing.JOptionPane
+import scala.swing.CheckMenuItem
+import scala.swing.event.Event
+import scala.swing.MenuItem
+import scala.swing.Menu
+import scala.swing.ButtonGroup
+import scala.swing.MenuBar
+import scala.swing.event.ButtonClicked
+import java.net.URL
+import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import data.general.ReloadFromModel
-import scala.swing.event.ButtonClicked
-import scala.swing.Button
-import CombatState._
+
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
 case class ZoomSet( zoom: Boolean ) extends Event
 case class FiringArcsSet( showFiringArcs: Boolean ) extends Event
 case class MirroringSet( mirror: Boolean ) extends Event
-case class ShowEmptySlots( ) extends Event
+case object ShowEmptySlots extends Event
+case object FillEmptySlots extends Event
 case class CombatStateSet( state: CombatState ) extends Event
 case object SaveShip extends Event
 case object OpenModWindow extends Event
@@ -34,12 +33,12 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   case class HullMenuItem(val hull: Hull) extends MenuItem("New " + hull.name)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
-  case object ZoomMenuItem extends CheckBox("Zoom  ")
-  case object ShowFiringArcsItem extends CheckBox("Show Firing Arcs and Shields  ")
-  case object MirrorItem extends CheckBox("Mirror Changes  ")
-  case object ShowEmptySlotsItem extends Button("Highlight Empty Slots  ") {
-    contentAreaFilled = false
-  }
+  
+  case object ZoomMenuItem extends CheckMenuItem("Zoom")
+  case object ShowFiringArcsItem extends CheckMenuItem("Show Firing Arcs and Shields")
+  case object MirrorItem extends CheckMenuItem("Mirror Changes")
+  case object ShowEmptySlotsItem extends MenuItem("Highlight Empty Slots")
+  case object FillEmptySlotsItem extends MenuItem("Fill Empty Slots")
   
   case object LoadShipFromFileItem extends MenuItem("Load From File")
   case object LoadShipFromUrlItem extends MenuItem("Load From URL")
@@ -48,8 +47,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object LoadModsItem extends MenuItem("Load Mods")
   
   val fileMenu = new Menu("File")
-  fileMenu.contents ++= Seq( LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem )
-  this.contents += fileMenu
+  fileMenu.contents ++= Seq(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem )
 
   listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem)
   
@@ -75,7 +73,10 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       orbitPort, orbitStarboard, evade );
   
   val shipsMenu = new Menu("Ships")
-  contents += shipsMenu
+  
+  val toolsMenu = new Menu("Tools")
+  toolsMenu.contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem,
+      ShowEmptySlotsItem, FillEmptySlotsItem )
   
   var hullMenuItems = Map[String, Menu]()
 
@@ -93,7 +94,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
         val hullMenu = new Menu(hull.name + "...")
         raceMenu.contents += hullMenu
         hullMenuItems += (hull.name -> hullMenu)
-      
+    
         for {
           ship <- data.ships(race, hull.hullId)
         } {
@@ -101,7 +102,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
           hullMenu.contents += shipMenuItem
           listenTo(shipMenuItem)
         }
-      
+    
         val hullItem = new HullMenuItem(hull)
         listenTo(hullItem)
         hullMenu.contents += hullItem 
@@ -109,10 +110,10 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     }
   }
   
-  contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
-      attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
+  contents ++= Seq( fileMenu, shipsMenu, toolsMenu, attackRuns, artillery,
+      holdPosition, orbitPort, orbitStarboard, evade)
   listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
-      attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
+      FillEmptySlotsItem, attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
 
   def shipLoaded(shipOpt: Option[Ship]) = {
     if ( shipOpt.isEmpty ) {
@@ -134,7 +135,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ShipSaved(ship) => shipLoaded(Some(ship))
     case ButtonClicked(HullMenuItem(hull)) => publish( HullSelected(hull) )
     case ButtonClicked(ShipMenuItem(ship, hull)) => {
-      publish( ShipSelected(ship, hull))
+      publish( ShipSelected(ship, hull) )
       ship.combatState match {
         case Some(Artillery) => artillery.selected = true
         case Some(HoldPosition) => holdPosition.selected = true
@@ -168,7 +169,8 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )
     case ButtonClicked(MirrorItem) => publish( MirroringSet( MirrorItem.selected ) )
-    case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots( ) )
+    case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots )
+    case ButtonClicked(FillEmptySlotsItem) => publish( FillEmptySlots )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
     case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet(AttackRuns))
     case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet(Artillery))

@@ -95,7 +95,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   }
 
 
-  private def modulesOverlapping( x: Range, y: Range ) = {
+  def modulesOverlapping( x: Range, y: Range ) = {
     slots.view.filter(_._2.module != dummy).filter{ tuple =>
       val (p, slot) = tuple
 
@@ -130,21 +130,29 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       .filter( _._2.module.weaponData.isDefined )
       .mapValues(_.module)
       .headOption
-
+      
   def hasPower( point: Point ) = slots(point).power
-
-  def placeModule( point: Point, newModule: ShipModule ) : ShipModel =
-    placeModule( point, newModule, None )
-  def placeModule( point: Point, newModule: ShipModule, option: Option[String] ) : ShipModel = {
-    val xRange = point.x until point.x + newModule.xSize
-    val yRange = point.y until point.y + newModule.ySize
-
+  
+  def canPlace( point: Point, module: ShipModule ) : Boolean = {
+    val xRange = point.x until point.x + module.xSize
+    val yRange = point.y until point.y + module.ySize
+    
     for {
       x <- xRange
       y <- yRange
       slot = slots.get(Point(x, y))
-      canPlace = slot.isDefined && meetsRestrictions(newModule, slot.get)
-    } if ( !canPlace ) return this
+      canPlace = slot.isDefined && meetsRestrictions(module, slot.get)
+    } if ( !canPlace ) return false
+    return true
+  }
+
+  def placeModule( point: Point, newModule: ShipModule ) : ShipModel =
+    placeModule( point, newModule, None )
+  def placeModule( point: Point, module: ShipModule, option: Option[String] ) : ShipModel = {
+    if ( !canPlace(point, module) ) return this;
+    
+    val xRange = point.x until point.x + module.xSize
+    val yRange = point.y until point.y + module.ySize
 
     val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
     val removed : Map[Point, ModelSlot] = toBeRemoved.map{ tuple =>
@@ -152,10 +160,10 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       (p, slot.copy( module = dummy, slotOption = None, facing = 90.0f))
     }
 
-    val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = newModule, slotOption = option ) )
+    val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = module, slotOption = option ) )
     val copyModel = copy( slots = slots ++ toBePlaced )
 
-    if ( newModule.powerPlantData.isDefined ) copyModel.computePowerGrid
+    if ( module.powerPlantData.isDefined ) copyModel.computePowerGrid
     else copyModel
   }
 
