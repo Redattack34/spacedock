@@ -16,6 +16,7 @@ import java.net.URL
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 import data.general.ReloadFromModel
+import java.io.File
 
 
 case class HullSelected( hull: Hull ) extends Event
@@ -27,30 +28,32 @@ case object ShowEmptySlots extends Event
 case object FillEmptySlots extends Event
 case class CombatStateSet( state: CombatState ) extends Event
 case object SaveShip extends Event
+case class SaveAs(file: File) extends Event
 case object OpenModWindow extends Event
 
 class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   case class HullMenuItem(val hull: Hull) extends MenuItem("New " + hull.name)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
-  
+
   case object ZoomMenuItem extends CheckMenuItem("Zoom")
   case object ShowFiringArcsItem extends CheckMenuItem("Show Firing Arcs and Shields")
   case object MirrorItem extends CheckMenuItem("Mirror Changes")
   case object ShowEmptySlotsItem extends MenuItem("Highlight Empty Slots")
   case object FillEmptySlotsItem extends MenuItem("Fill Empty Slots")
-  
+
   case object LoadShipFromFileItem extends MenuItem("Load From File")
   case object LoadShipFromUrlItem extends MenuItem("Load From URL")
   case object SaveShipItem extends MenuItem("Save")
+  case object SaveAsItem extends MenuItem("Save As")
   case object ExitItem extends MenuItem("Exit")
   case object LoadModsItem extends MenuItem("Load Mods")
-  
-  val fileMenu = new Menu("File")
-  fileMenu.contents ++= Seq(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem )
 
-  listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, LoadModsItem, ExitItem)
-  
+  val fileMenu = new Menu("File")
+  fileMenu.contents ++= Seq(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, SaveAsItem, LoadModsItem, ExitItem )
+
+  listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, SaveAsItem , LoadModsItem, ExitItem)
+
   val attackRuns = new RadioButton("Attack Runs  ")
   attackRuns.tooltip = data.token(200)
 
@@ -71,14 +74,18 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   val group = new ButtonGroup( artillery, attackRuns, holdPosition,
       orbitPort, orbitStarboard, evade );
-  
+
   val shipsMenu = new Menu("Ships")
-  
+
   val toolsMenu = new Menu("Tools")
   toolsMenu.contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem,
       ShowEmptySlotsItem, FillEmptySlotsItem )
-  
+
   var hullMenuItems = Map[String, Menu]()
+
+  val chooser = new JFileChooser
+  chooser.setFileFilter(new FileNameExtensionFilter("Ship XML Files", "xml"))
+  chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
 
   loadMenus
   def loadMenus = {
@@ -87,14 +94,14 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     } {
       val raceMenu = new Menu(race + "...")
       shipsMenu.contents += raceMenu
-    
+
       for {
         hull <- data.hulls(race)
       } {
         val hullMenu = new Menu(hull.name + "...")
         raceMenu.contents += hullMenu
         hullMenuItems += (hull.name -> hullMenu)
-    
+
         for {
           ship <- data.ships(race, hull.hullId)
         } {
@@ -102,14 +109,14 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
           hullMenu.contents += shipMenuItem
           listenTo(shipMenuItem)
         }
-    
+
         val hullItem = new HullMenuItem(hull)
         listenTo(hullItem)
-        hullMenu.contents += hullItem 
+        hullMenu.contents += hullItem
       }
     }
   }
-  
+
   contents ++= Seq( fileMenu, shipsMenu, toolsMenu, attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
   listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
@@ -130,7 +137,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       publish(ShipSelected(ship, hull))
     }
   }
-      
+
   reactions += {
     case ShipSaved(ship) => shipLoaded(Some(ship))
     case ButtonClicked(HullMenuItem(hull)) => publish( HullSelected(hull) )
@@ -154,9 +161,6 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       }
     }
     case ButtonClicked(LoadShipFromFileItem) => {
-      val chooser = new JFileChooser
-      chooser.setFileFilter(new FileNameExtensionFilter("Ship XML Files", "xml"))
-      chooser.setFileSelectionMode(JFileChooser.FILES_ONLY)
       val accepted = chooser.showOpenDialog(this.peer.getParent())
       if (accepted == JFileChooser.APPROVE_OPTION) {
         val file = chooser.getSelectedFile()
@@ -165,6 +169,15 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       }
     }
     case ButtonClicked(SaveShipItem) => publish(SaveShip)
+    case ButtonClicked(SaveAsItem) => {
+      val accepted = chooser.showSaveDialog(this.peer.getParent())
+      if (accepted == JFileChooser.APPROVE_OPTION) {
+        val file = chooser.getSelectedFile()
+        val withExtension = if ( !file.getName().endsWith(".xml") ) new File( file.getAbsolutePath() + ".xml" )
+                            else file
+        publish( SaveAs(withExtension) )
+      }
+    }
     case ButtonClicked(ExitItem) => System.exit(0)
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )

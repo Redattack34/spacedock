@@ -26,11 +26,11 @@ import gui.UnloadMod
 import data.xml.Technology
 import data.xml.Research
 
-class ModData(val name: String, val dir: File) { 
+class ModData(val name: String, val dir: File) {
   import DataModel._
-  
+
   private val englishFile = dir / 'Localization / "English.xml"
-  
+
   val hullsByRace : Map[String, Map[String, Hull]] = {
   val loadedHulls = showErrors( Hull.loadAll(dir) )
   loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
@@ -43,14 +43,14 @@ class ModData(val name: String, val dir: File) {
   val technologies : Seq[Technology] = showErrors(Research.loadAll(dir))
   val techsByMod = technologies.flatMap(t => t.modules.map( (_, t) )).toMap
   val techsByHull = technologies.flatMap(t => t.hulls.map( (_, t) )).toMap
-  
+
   //println(modules("FighterBay"));
-  
+
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = this.dir / 'Textures / 'Modules
-    
+
     if ( !dir.exists() ) return Map()
-    
+
     val eithers = for { file <- dir.listFiles().par }
         yield ("Modules/" + file.getName().replace(".xnb", ""), loadTexture(file))
 
@@ -63,15 +63,15 @@ case object ReloadFromModel extends Event
 
 class DataModel extends Publisher with Reactor {
   import DataModel._
-  
+
   private val install = Config.install
   private val user = Config.user
-  
+
   private val content = install / 'Content
   val baseGame = new ModData("StarDrive", content)
-  
+
   val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
-  
+
   var _modData = Config.mods
                 .flatMap(mod => allMods.get(mod))
                 .map(mod => (mod, install / 'Mods / mod.dir))
@@ -82,13 +82,13 @@ class DataModel extends Publisher with Reactor {
     allData = baseGame +: modData
     publish(ReloadFromModel)
   }
-  
+
   var allData = baseGame +: modData
-  
+
   var customShipDesigns = showErrors(Ship.loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
   val lightningBolt : ImageIcon = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get
-  
+
   def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
   def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
   def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
@@ -98,27 +98,27 @@ class DataModel extends Publisher with Reactor {
     .filter(_._2.requiredModsList.forall(loadedMods.contains))
   def techsByMod   = allData.map(_.techsByMod  ).reduceLeft(_ ++ _)
   def techsByHull  = allData.map(_.techsByHull ).reduceLeft(_ ++ _)
-      
+
   def races = hullsByRace.keys.toSeq.sorted
-  
+
   def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
-  
+
   def ships(race: String, hull: String) = shipDesigns.values
       .filter(_.race == race)
       .filter(_.hull == hull)
-      
+
   def hullForShip(s: Ship) = hullsByRace(s.race)(s.hull)
-  
+
   def token(id: Int) = tokens(id)
-  
+
   def weapon(weaponId: String) = weapons.get(weaponId).orElse(weapons.get(weaponId.replace("Dual", "").trim)).get
   def weaponTypes = weapons.values.map(_.weaponType).toSet
-  
+
   def module( moduleId: String ) = modules(moduleId)
   def shipModules = modules.values
-  
+
   def moduleImage( mod: ShipModule) = moduleImages(mod.iconTexturePath)
-  
+
   def loadShipFromFile( f: File ) : Option[Ship] = {
     val ship = Ship.loadFromFile(f)
     ship.foreach( ship => customShipDesigns += (ship.name -> ship))
@@ -134,24 +134,30 @@ class DataModel extends Publisher with Reactor {
   def fighterDesigns : Array[String] =
     shipDesigns.values.filter( _.role == "fighter").map(_.name)
         .toSeq.sorted.toArray
-        
+
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
   def loadedMods : Seq[String] = modData.map(_.name)
-  
+
   def techsForMods( mods: Iterable[ShipModule]) : Set[Technology] = {
     val techs = techsByMod
     mods.map(_.uid).flatMap(techs.get).toSet
   }
-    
+
   def techForHull( race: String, hull: String ) : Option[Technology] =
     techsByHull.get( race + "/" + hull )
-  
+
   def save( ship: ShipModel ) : Ship = {
     val saved = Ship.saveShip(ship, user)
     customShipDesigns += (saved.name -> saved)
     saved
   }
-  
+
+  def saveToFile( ship: ShipModel, file: File ) : Ship = {
+    val saved = Ship.saveShipToFile(ship, file)
+    customShipDesigns += (saved.name -> saved)
+    saved
+  }
+
   reactions += {
     case LoadMod(mod) => modData = modData :+ new ModData(mod.name, install / 'Mods / mod.dir)
     case UnloadMod(mod) => modData = modData.filter(_.name != mod.name)
@@ -160,20 +166,20 @@ class DataModel extends Publisher with Reactor {
 }
 
 object DataModel {
-  
+
   def showErrors[T]( values: Seq[(File, Option[T])]) : Seq[T] = {
     val failures = values.filter(_._2.isEmpty)
-    
+
     if ( !failures.isEmpty ) {
       val errorString = failures.map(_._1).mkString("\n")
       JOptionPane.showMessageDialog(null, "Failed to read files: \n" + errorString,
           "Spacedock Error", JOptionPane.ERROR_MESSAGE);
     }
-    
+
     values.collect{ case (_, Some(t)) => t }
   }
-    
-    
+
+
   def loadTexture(f: File) : Option[ImageIcon] = {
     XnbReader.read(f) match {
       case Left(ex) => {

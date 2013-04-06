@@ -145,10 +145,14 @@ object Ship extends XmlLoader[Ship]{
   } 
   
   def saveShip( ship: ShipModel, user: File ) : Ship = {
-    val xml = shipToXml(ship)
     val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "WIP"
               else "Saved Designs"
     val file = user / dir / (ship.ship.name + ".xml")
+    saveShipToFile( ship, file )
+  }
+  
+  def saveShipToFile( ship: ShipModel, file: File ) : Ship = {
+    val xml = shipToXml(ship)
     val scalaXml = scala.xml.XML.loadString(xml.toString)
     val printer = new PrettyPrinter(200, 2)
     

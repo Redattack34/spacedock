@@ -83,7 +83,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     _arcs = a
     repaint
   }
-  
+
   private var _mirror = false;
   private def mirror = _mirror;
   private def mirror_=(a: Boolean) {
@@ -122,14 +122,14 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
       repaint
     }
   }
-  
+
   private var _showEmpty = 0
   private def showEmpty = _showEmpty
   private def showEmpty_=(newShow: Int) = {
     this._showEmpty = newShow
     repaint
   }
-  
+
   private def resize : Unit = {
     val newWidth = shipModel.width + 20
     val newHeight = shipModel.height + 20
@@ -147,14 +147,14 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   listenTo(mouse.clicks)
   listenTo(keys)
 
-  def getMouseOver( loc: AwtPoint ) = 
+  def getMouseOver( loc: AwtPoint ) =
     Point((loc.x / zoom) - 10, (loc.y / zoom) - 10)
-  
-  def centerMod( c: Int, size: Int ) : Double = ((c + size.toFloat / 2) + 10) * zoom 
-    
-  def toAwtPoint( p: Point, xSize: Int, ySize: Int) = 
+
+  def centerMod( c: Int, size: Int ) : Double = ((c + size.toFloat / 2) + 10) * zoom
+
+  def toAwtPoint( p: Point, xSize: Int, ySize: Int) =
     new AwtPoint( centerMod(p.x, xSize).toInt, centerMod(p.y, ySize).toInt )
-    
+
   def getAngle( mod: AwtPoint, mouse: AwtPoint ) : Double = {
     val diffX = mouse.x - mod.x
     val diffY = mod.y - mouse.y
@@ -162,33 +162,33 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     val angleRad = math.atan2(diffY, diffX)
     math.toDegrees(angleRad)
   }
-  
-  def pointToMouse( mouse: AwtPoint, p: Point, mod: ShipModule) : Double = 
+
+  def pointToMouse( mouse: AwtPoint, p: Point, mod: ShipModule) : Double =
     getAngle( toAwtPoint( p, mod.xSize, mod.ySize), mouse )
-    
+
   def pointAwayFromMouse( mouse: AwtPoint, p: Point, mod: ShipModule) : Double =
     (pointToMouse(mouse, p, mod) + 180.0d) % 360.0d
-    
+
   def shareDirection : (AwtPoint, Point, ShipModule) => Double = {
     val FacingMode(mods) = mode
     val seq = mods.toSeq
-    
+
     val minX = seq.map(_._1.x).min
     val minY = seq.map(_._1.y).min
-    
+
     val maxX = seq.map(t => t._1.x + t._2.xSize).max
     val maxY = seq.map(t => t._1.y + t._2.ySize).max
-    
+
     val sizeX = maxX - minX
     val sizeY = maxY - minY
-    
+
     val baseX = centerMod( minX, sizeX )
     val baseY = centerMod( minY, sizeY )
-    
+
     val base = new AwtPoint( baseX.toInt, baseY.toInt )
     (mouse, p, ship) => getAngle( base, mouse )
   }
-  
+
   val keyToAngle : PartialFunction[Key.Value, Double] = {
           case Key.Numpad6 =>   0d
           case Key.Numpad9 =>  45d
@@ -199,18 +199,21 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
           case Key.Numpad2 => 270d
           case Key.Numpad3 => 315d
         }
-  
+
   def constantAngle( angle: Double ) : (AwtPoint, Point, ShipModule) => Double = {
     (mouse, p, ship) => angle
   }
-    
+
   def changeFacing( mouse: AwtPoint )( ang: (AwtPoint, Point, ShipModule) => Double)
       ( model: ShipModel, pair: (Point, ShipModule)) : ShipModel = {
     val (p, mod) = pair
     mirrorChange( model, mod.xSize, p, ang(mouse, p, mod),
       (ship, p, f) => ship.setFacing(p, f.toFloat) )
   }
-    
+
+  def getName() = JOptionPane.showInputDialog(this.peer, "Name:",
+          "Save Ship", JOptionPane.QUESTION_MESSAGE)
+
   reactions += {
     case ReloadFromModel => {
       shipModel = shipModel.reload(dataModel)
@@ -226,11 +229,18 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case ModuleSelected(mod) => this.mode = PlacementMode(mod)
     case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
-      val name = JOptionPane.showInputDialog(this.peer, "Name:",
-          "Save Ship", JOptionPane.QUESTION_MESSAGE)
+      val name = getName()
       if ( name != null ) {
         shipModel = shipModel.withName(name)
         val saved = dataModel.save(shipModel)
+        publish(ShipSaved(saved))
+      }
+    }
+    case SaveAs(file) => {
+      val name = getName()
+      if ( name != null ) {
+        shipModel = shipModel.withName(name)
+        val saved = dataModel.saveToFile(shipModel, file)
         publish(ShipSaved(saved))
       }
     }
@@ -256,29 +266,29 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     case cl: MousePressed if cl.isRight => { this.requestFocus; rightClick }
     case cl: MousePressed if cl.isMiddle => { this.requestFocus; middleClick }
     case cl: MousePressed if cl.isLeft => { this.requestFocus; leftClick(cl) }
-    
+
     case keyReleased : KeyReleased => {
       if ( mode.isFacing && keyToAngle.isDefinedAt(keyReleased.key)) {
         val FacingMode(mods) = mode
-        
+
         val angle = keyToAngle(keyReleased.key)
-        
+
         val filtered = mods.filter(_._2.moduleType == "Turret")
         shipModel = filtered.foldLeft(shipModel)(changeFacing(null)(constantAngle(angle)) _)
       }
     }
   }
-  
+
   private def dropModule = this.mode = NormalMode
-  
+
   def mirrorChange(model: ShipModel, xSize: Int, p: Point,
-      f: (ShipModel, Point) => ShipModel ) : ShipModel = 
+      f: (ShipModel, Point) => ShipModel ) : ShipModel =
     mirrorChange(model, xSize, p, 0.0d, (ship, p, ang) => f(ship, p))
   def mirrorChange(model: ShipModel, xSize: Int, p: Point, angleDeg: Double,
       f : (ShipModel, Point, Double) => ShipModel ) : ShipModel = {
     val newModel = f( model, p, angleDeg )
-    if ( this.mirror && 
-       ( (p.x          >= model.midPoint + 1) || 
+    if ( this.mirror &&
+       ( (p.x          >= model.midPoint + 1) ||
          (p.x + xSize  <= model.midPoint + 1) ) ) {
       f( newModel, reflected( p, xSize ),  180.0d - angleDeg )
     }
@@ -296,7 +306,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     }
     else this.mode = NormalMode
   }
-  
+
   private def leftClick(e: MouseEvent) : Unit = {
     mode match {
       case PlacementMode(mod) => {
@@ -322,7 +332,7 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
             case FacingMode(mods) => mods
             case _ => Set()
           }
-          
+
           val newMods = if ( e.isShiftDown ) {
             if ( mods.contains(tuple) ) mods - tuple
             else mods + tuple
@@ -332,11 +342,11 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
       }
     }
   }
-  
+
   def fillEmptySlots() {
     if ( !mode.isPlacement ) return;
     val PlacementMode(mod) = mode
-    
+
     val leftRange = (0 to shipModel.midPoint + 1)
     val rightRange = (shipModel.width to shipModel.midPoint by -1)
     val xRange = leftRange.toSeq ++ rightRange
@@ -355,13 +365,13 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   def getRect(x: Int, y: Int, w: Int = 1, h: Int = 1) =
     new Rectangle((x + 10) * zoom + 2, (y + 10) * zoom + 2, (w * zoom) - 4, (h * zoom) - 4)
 
-  
+
   def reflected(p: Point, xSize: Int ) : Point = {
     val mid = shipModel.midPoint
     if ( p.x < mid ) Point( mid + (mid - p.x) + 1 - (xSize - 1), p.y)
     else             Point( mid - (p.x - mid) + 1 - (xSize - 1), p.y)
   }
-  
+
   override def paint( g2: Graphics2D ) : Unit = {
     super.paint(g2)
 
@@ -400,13 +410,13 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         }
       }
     }
-    
+
     if (showArcs) {
       for {
         (p, module) <- shipModel.allModules
         shield <- module.shieldData
       } drawShieldRadius( g2, p, module, shield )
-    } 
+    }
     if (mode.isPlacement) {
       val PlacementMode(module) = mode
       module.shieldData.foreach(s => drawShieldRadius(g2, mouseOver, module, s))
@@ -420,27 +430,27 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
         g2.drawLine(midpointLine * zoom, 0, midpointLine * zoom, this.size.height)
       }
     }
-    
+
     if ( showEmpty > 0) { showEmpty -= 1 }
   }
 
   private def drawSlot(g2: Graphics2D, p: Point, slot: HullModuleSlot ): Unit = {
     val Point(x, y) = p
     val rect = getRect(x, y)
-    
+
     val xSize = mode.module.map(_.xSize).getOrElse(1)
     val ySize = mode.module.map(_.ySize).getOrElse(1)
 
     val xRange = mouseOver.x until mouseOver.x + xSize
     val yRange = mouseOver.y until mouseOver.y + ySize
-    val mirror = if ( this.mirror && 
-                    ( (mouseOver.x          >= shipModel.midPoint + 1) || 
+    val mirror = if ( this.mirror &&
+                    ( (mouseOver.x          >= shipModel.midPoint + 1) ||
                       (mouseOver.x + xSize  <= shipModel.midPoint + 1) ) ) reflected(mouseOver, xSize )
                  else mouseOver
     val xRangeMirror = mirror.x until mirror.x + xSize
     val yRangeMirror = mirror.y until mirror.y + ySize
     val blockColor = if ( xRange.contains(p.x) && yRange.contains(p.y) ) mouseOverColor
-                else if ( xRangeMirror.contains(p.x) && yRangeMirror.contains(p.y)) mouseOverColor 
+                else if ( xRangeMirror.contains(p.x) && yRangeMirror.contains(p.y)) mouseOverColor
                 else if ( !mode.isPlacement ) Color.WHITE
                 else if ( shipModel.meetsRestrictions(mode.module.get, p) ) canPlaceColor
                 else canNotPlaceColor
@@ -499,17 +509,17 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     g2.drawArc((baseX - r).toInt, (baseY - r).toInt, (2 * r).toInt, (2 * r).toInt,
         math.toDegrees(facingRad - spread).toInt, math.toDegrees(2 * spread).toInt)
   }
-  
+
   private def drawShieldRadius( g2: Graphics2D, p: Point, mod: ShipModule, shield: ShieldData ) {
     val radius = (shield.radius.toDouble / 16) * zoom
     val diameter = (radius * 2).toInt
-    
+
     val baseX = ((p.x + mod.xSize.toFloat / 2) + 10) * zoom
     val baseY = ((p.y + mod.ySize.toFloat / 2) + 10) * zoom
-    
+
     val x = baseX - radius
     val y = baseY - radius
-    
+
     g2.setColor(shieldColor)
     g2.drawOval(x.toInt, y.toInt, diameter, diameter)
   }
