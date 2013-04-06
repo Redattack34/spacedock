@@ -336,20 +336,20 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   def fillEmptySlots() {
     if ( !mode.isPlacement ) return;
     val PlacementMode(mod) = mode
-    var model = shipModel
     
     val leftRange = (0 to shipModel.midPoint + 1)
     val rightRange = (shipModel.width to shipModel.midPoint by -1)
     val xRange = leftRange.toSeq ++ rightRange
-    
-    for( y <- 0 to shipModel.height; x <- xRange ) {
-      if ( model.canPlace(Point(x, y), mod) &&
-           model.modulesOverlapping(x until x + mod.xSize, y until y + mod.ySize ).isEmpty
-          ) {
-        model = model.placeModule(Point(x, y), mod)
+
+    shipModel = (0 to shipModel.height).foldLeft(shipModel){ (model, y) =>
+      xRange.foldLeft(model){ (model, x) =>
+        val point = Point(x, y)
+        if ( model.canPlace(Point(x, y), mod) &&
+             model.modulesOverlapping(x until x + mod.xSize, y until y + mod.ySize ).isEmpty
+           ) model.placeModule(Point(x, y), mod)
+        else model
       }
     }
-    this.shipModel = model
   }
 
   def getRect(x: Int, y: Int, w: Int = 1, h: Int = 1) =
