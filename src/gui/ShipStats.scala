@@ -34,9 +34,10 @@ class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
     contents += label
     label
   }
-  
-  val warpSpeedFormat = new DecimalFormat("###.#k")
-  val turnRateFormat = new DecimalFormat("###.##")
+
+  val warpSpeedFormat = new DecimalFormat("####.#k")
+  val twoDecimals = new DecimalFormat("####.##")
+  val singleDecimal = new DecimalFormat("####.#")
 
   def getResearch(model: ShipModel) : String = {
     val hullResearch = dataModel.techForHull(model.hull.race, model.hull.hullId)
@@ -44,20 +45,20 @@ class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
     val allResearch = hullResearch ++ modResearch
     allResearch.map(_.nameID).map(dataModel.token).mkString(", ")
   }
-  
+
   reactions += {
     case ShipModelChanged(newModel) => {
-      cost.text = "Production Cost: " + newModel.cost
-      upkeep.text = "Upkeep: " + newModel.upkeep + "/turn"
+      cost.text = "Production Cost: " + newModel.cost.toInt
+      upkeep.text = "Upkeep: " + twoDecimals.format( newModel.upkeep ) + "/turn"
       powerCapacity.text = "Power Capacity: " + newModel.powerCapacity
-      recharge.text = "Power Recharge: " + newModel.recharge
-      rechargeAtWarp.text = "Recharge at Warp: " + newModel.rechargeAtWarp
+      recharge.text = "Power Recharge: " + newModel.recharge.toInt
+      rechargeAtWarp.text = "Recharge at Warp: " + newModel.rechargeAtWarp.toInt
       hitpoints.text = "Total Hitpoints: " + newModel.hitpoints
       shieldPower.text = "Total Shield Power: " + newModel.shieldPower
-      mass.text = "Total Mass: " + newModel.mass
-      sublightSpeed.text = "Sub-Light Speed: " + newModel.sublightSpeed
+      mass.text = "Total Mass: " + newModel.mass.toInt
+      sublightSpeed.text = "Sub-Light Speed: " + singleDecimal.format( newModel.sublightSpeed )
       ftlSpeed.text = "FTL Speed: " + warpSpeedFormat.format( newModel.ftlSpeed.toFloat / 1000 )
-      turnRate.text = "Turn Rate: " + turnRateFormat.format( newModel.turnRate )
+      turnRate.text = "Turn Rate: " + twoDecimals.format( newModel.turnRate )
       ordnanceCapacity.text = "Ordnance Capacity: " + newModel.ordnanceCapacity
       cargoSpace.text = "Cargo Space: " + newModel.cargoSpace
       hasBridge.text = "Has Cockpit/Bridge/CIC: " + newModel.hasCommandModule
