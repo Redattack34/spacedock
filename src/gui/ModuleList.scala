@@ -79,7 +79,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
       .map((str : String) => ((str, new Node(str))))
     .toMap
     weaponTypeNodes.values.foreach(weapon.add(_))
-    
+
     moduleTypeNodes = shipModules
       .filter(_.weaponData.isEmpty)
       .map(_.moduleType)
@@ -87,7 +87,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
       .map((str: String) => ((str, new Node(str))))
     .toMap
     moduleTypeNodes.foreach( (addCategory _).tupled)
-  
+
     shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
   }
   loadModules
@@ -96,8 +96,8 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
   tree.setRootVisible(false)
   tree.addMouseListener(this)
   tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
-  
-  override def mouseClicked(ev: MouseEvent) {
+
+  override def mouseReleased(ev: MouseEvent) = {
     val selected = tree.getLastSelectedPathComponent
     selected match {
       case node: ModuleNode => publish( ModuleSelected(node.mod))
@@ -105,11 +105,11 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
     }
   }
 
+  override def mouseClicked(ev: MouseEvent) = Unit
   override def mousePressed(ev: MouseEvent) = Unit
-  override def mouseReleased(ev: MouseEvent) = Unit
   override def mouseEntered(ev: MouseEvent) = Unit
   override def mouseExited(ev: MouseEvent) = Unit
-  
+
   add(new ScrollPane(Component.wrap(tree)), BorderPanel.Position.Center)
 
   reactions += {
