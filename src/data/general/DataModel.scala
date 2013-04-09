@@ -25,16 +25,20 @@ import gui.ClearMods
 import gui.UnloadMod
 import data.xml.Technology
 import data.xml.Research
+import com.weiglewilczek.slf4s.Logging
 
-class ModData(val name: String, val dir: File) {
+class ModData(val name: String, val dir: File) extends Logging {
   import DataModel._
+
+  logger.info("Loading " + name + " from " + dir.getAbsolutePath)
 
   private val englishFile = dir / 'Localization / "English.xml"
 
   val hullsByRace : Map[String, Map[String, Hull]] = {
-  val loadedHulls = showErrors( Hull.loadAll(dir) )
-  loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
+    val loadedHulls = showErrors( Hull.loadAll(dir) )
+    loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
   }
+
   val tokens : Map[Int, String] = loadTokens(englishFile)
   val weapons : Map[String, Weapon] = showErrors(Weapon.loadAll(dir)).map( weap => (weap.name, weap)).toMap
   val modules : Map[String, ShipModule] = showErrors(Module.loadAll(dir)).map( mod => (mod.uid, mod)).toMap
@@ -43,8 +47,6 @@ class ModData(val name: String, val dir: File) {
   val technologies : Seq[Technology] = showErrors(Research.loadAll(dir))
   val techsByMod = technologies.flatMap(t => t.modules.map( (_, t) )).toMap
   val techsByHull = technologies.flatMap(t => t.hulls.map( (_, t) )).toMap
-
-  //println(modules("FighterBay"));
 
   private def loadModuleTextures : Map[String, ImageIcon] = {
     val dir = this.dir / 'Textures / 'Modules
@@ -165,12 +167,15 @@ class DataModel extends Publisher with Reactor {
   }
 }
 
-object DataModel {
+object DataModel extends Logging {
 
   def showErrors[T]( values: Seq[(File, Option[T])]) : Seq[T] = {
     val failures = values.filter(_._2.isEmpty)
 
     if ( !failures.isEmpty ) {
+
+      failures.map(_._1).foreach( f => logger.error("Failed to load file: " + f.getAbsolutePath) )
+
       val errorString = failures.map(_._1).mkString("\n")
       JOptionPane.showMessageDialog(null, "Failed to read files: \n" + errorString,
           "Spacedock Error", JOptionPane.ERROR_MESSAGE);
@@ -183,6 +188,7 @@ object DataModel {
   def loadTexture(f: File) : Option[ImageIcon] = {
     XnbReader.read(f) match {
       case Left(ex) => {
+        logger.error("Failed to load texture: " + f.getAbsolutePath, ex)
         JOptionPane.showMessageDialog(null, "Failed to load file: " + f + "\n" + ex,
             "SpaceDock: Failed to Load Texture", JOptionPane.ERROR_MESSAGE)
         None

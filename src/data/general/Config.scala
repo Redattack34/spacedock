@@ -2,15 +2,13 @@ package data.general
 
 import java.io.File
 import java.io.PrintStream
-
 import scala.io.Source
-
 import javax.swing.JFileChooser
-
 import Iterator._
+import com.weiglewilczek.slf4s.Logging
 
-object Config {
-  
+object Config extends Logging {
+
   private[this] var _install : File = null
   def install = _install
   private def install_=(file: File) = {
@@ -22,50 +20,67 @@ object Config {
   private def user_=(file: File) = {
     _user = file
   }
-  
+
   private[this] var _mods : Seq[String] = Vector()
   def mods = _mods
   private def mods_=(newMods: Seq[String]) = {
     _mods = newMods
   }
-  
+
   val chooser = new JFileChooser
   chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
-  
+
   def addMod( name: String ) = {
     mods = mods ++ Seq(name)
     write
   }
-  
+
   def removeMod( name: String ) = {
     mods = mods.filterNot(_ == name)
     write
   }
-  
+
   def clearMods = {
     mods = Vector()
     write
   }
-  
+
   private[this] val config = new File("config")
   if ( !config.exists() || !config.canRead() ) {
+    logger.info("Cannot read config file. Finding install directory...")
     this.install = installDirs.find(isValidInstallDir).get
     this.user = userDirs.find(isValidUserDir).get
     write
   }
   else {
+    logger.info("Loading from config file...")
     val source = Source.fromFile(config)
     val lines = source.getLines
     this.install = new File(lines.next)
     this.user = new File(lines.next)
     this.mods = lines.toSeq
+    logger.info("Install Directory: " + install.getAbsolutePath())
+    logger.info("User Directory: " + user.getAbsolutePath())
   }
-  
-  private def isValidInstallDir( f: File ) =
-    f != null && f.exists() && f.list.contains("Content") && f.list.contains("Mods")
 
-  private def isValidUserDir( f: File ) =
-    f != null && f.exists() && f.list.contains("Saved Designs") && f.list.contains("WIP")
+  private def isValidInstallDir( f: File ) : Boolean = {
+
+    def logFailed(reason: String) = logger.warn( "Invalid install dir (" + f + "): " + reason )
+    if (f == null) { logFailed(""); return false }
+    if (!f.exists()) { logFailed("Doesn't Exist"); return false}
+    if (!f.list.contains("Content")) { logFailed("Doesn't contain Content folder"); return false}
+    if (!f.list.contains("Mods")) { logFailed("Doesn't contain Mods folder"); return false}
+    return true;
+  }
+
+  private def isValidUserDir( f: File ) : Boolean = {
+    def logFailed(reason: String) = logger.warn( "Invalid user dir (" + f + "): " + reason )
+    if (f == null) { logFailed(""); return false }
+    if (!f.exists()) { logFailed("Doesn't Exist"); return false}
+    if (!f.list.contains("Saved Designs")) { logFailed("Doesn't contain Saved Designs folder"); return false}
+    if (!f.list.contains("WIP")) { logFailed("Doesn't contain WIP folder"); return false}
+    return true
+  }
 
   private def installDirs : Iterator[File] = Iterator(
     new File( "C:\\Program Files\\Steam\\steamapps\\common\\StarDrive"),
@@ -75,7 +90,7 @@ object Config {
   private def userDirs : Iterator[File] = Iterator(
     new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
   ) ++ continually(showChooser("Select StarDrive Saved Ships Directory")).flatten
-  
+
   private def showChooser( prompt: String ) : Iterator[File] = {
     chooser.setDialogTitle(prompt)
     val accept = chooser.showOpenDialog(null)
@@ -91,7 +106,7 @@ object Config {
       Iterator.empty
     }
   }
-  
+
   private def write = {
     val config = new File("config")
     if ( !config.exists() ) config.createNewFile

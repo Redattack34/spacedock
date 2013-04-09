@@ -10,6 +10,9 @@ import scala.swing.SplitPane
 import data.general.DataModel
 import javax.swing.UIManager
 import scala.swing.Window
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.core.util.StatusPrinter
+import org.slf4j.LoggerFactory
 
 object Spacedock extends SimpleSwingApplication {
 
@@ -25,7 +28,7 @@ object Spacedock extends SimpleSwingApplication {
   catch {
     case ex : Exception => ex.printStackTrace()
   }
-  
+
   val dataModel = new DataModel
 
   val modules: Component = new ModuleList(dataModel)
@@ -43,18 +46,18 @@ object Spacedock extends SimpleSwingApplication {
 
   modules.listenTo(shipEditor)
   modules.listenTo(dataModel)
-  
+
   sdMenuBar.listenTo(shipEditor)
   sdMenuBar.listenTo(dataModel)
 
   shipStats.listenTo(shipEditor)
-  
+
   modWindow.listenTo(sdMenuBar)
-  
+
   this.listenTo(shipEditor)
-  
+
   dataModel.listenTo(modWindow)
-  
+
   val toolPaneBottom = new SplitPane {
     topComponent = moduleStats
     bottomComponent = shipStats

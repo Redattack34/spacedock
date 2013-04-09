@@ -12,5 +12,7 @@
 	   <dependency name="anti-xml_2.9.1" org="com.codecommit" rev="0.3">
 	     <exclude module="scala-library"/>
 	   </dependency>
+	   <dependency name="slf4s_2.9.1" org="com.weiglewilczek.slf4s" rev="1.0.7" />
+	   <dependency name="logback-classic" org="ch.qos.logback" rev="1.0.11"/>
 	</dependencies>
 </ivy-module>
