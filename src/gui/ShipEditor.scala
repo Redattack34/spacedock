@@ -347,8 +347,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     if ( !mode.isPlacement ) return;
     val PlacementMode(mod) = mode
 
-    val leftRange = (0 to shipModel.midPoint + 1)
-    val rightRange = (shipModel.width to shipModel.midPoint by -1)
+    val leftRange = (0 to shipModel.midPoint.toInt + 1)
+    val rightRange = (shipModel.width to shipModel.midPoint.toInt by -1)
     val xRange = leftRange.toSeq ++ rightRange
 
     shipModel = (0 to shipModel.height).foldLeft(shipModel){ (model, y) =>
@@ -368,8 +368,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
 
   def reflected(p: Point, xSize: Int ) : Point = {
     val mid = shipModel.midPoint
-    if ( p.x < mid ) Point( mid + (mid - p.x) + 1 - (xSize - 1), p.y)
-    else             Point( mid - (p.x - mid) + 1 - (xSize - 1), p.y)
+    if ( p.x < mid ) Point( (mid + (mid - p.x) - 1 - (xSize - 1)).toInt, p.y)
+    else             Point( (mid - (p.x - mid) - 1 - (xSize - 1)).toInt, p.y)
   }
 
   override def paint( g2: Graphics2D ) : Unit = {
@@ -423,11 +423,11 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     }
 
     if ( mirror ) {
-      val midpointLine = shipModel.midPoint + 11
+      val midpointLine = shipModel.midPoint + 10
       if ( midpointLine != -1 ) {
         g2.setColor(Color.BLACK)
         g2.setStroke(new BasicStroke(1))
-        g2.drawLine(midpointLine * zoom, 0, midpointLine * zoom, this.size.height)
+        g2.drawLine((midpointLine * zoom).toInt, 0, (midpointLine * zoom).toInt, this.size.height)
       }
     }
 
@@ -444,8 +444,8 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
     val xRange = mouseOver.x until mouseOver.x + xSize
     val yRange = mouseOver.y until mouseOver.y + ySize
     val mirror = if ( this.mirror &&
-                    ( (mouseOver.x          >= shipModel.midPoint + 1) ||
-                      (mouseOver.x + xSize  <= shipModel.midPoint + 1) ) ) reflected(mouseOver, xSize )
+                    ( (mouseOver.x          >= shipModel.midPoint) ||
+                      (mouseOver.x + xSize  <= shipModel.midPoint) ) ) reflected(mouseOver, xSize )
                  else mouseOver
     val xRangeMirror = mirror.x until mirror.x + xSize
     val yRangeMirror = mirror.y until mirror.y + ySize

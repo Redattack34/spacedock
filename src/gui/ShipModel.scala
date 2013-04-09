@@ -65,7 +65,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
                           val height = slots.keys.maxBy(_.y).y
                           (width, height)
                         }
-  val midPoint = width / 2
+  val midPoint = (width.toDouble + 1) / 2
 
   val allSlots = slots.mapValues(_.hullSlot)
   val allModules = slots.mapValues(_.module).filter(_._2 != dummy)
@@ -130,13 +130,13 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       .filter( _._2.module.weaponData.isDefined )
       .mapValues(_.module)
       .headOption
-      
+
   def hasPower( point: Point ) = slots(point).power
-  
+
   def canPlace( point: Point, module: ShipModule ) : Boolean = {
     val xRange = point.x until point.x + module.xSize
     val yRange = point.y until point.y + module.ySize
-    
+
     for {
       x <- xRange
       y <- yRange
@@ -150,7 +150,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     placeModule( point, newModule, None )
   def placeModule( point: Point, module: ShipModule, option: Option[String] ) : ShipModel = {
     if ( !canPlace(point, module) ) return this;
-    
+
     val xRange = point.x until point.x + module.xSize
     val yRange = point.y until point.y + module.ySize
 
@@ -177,7 +177,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
 
   def withCombatState( cs: CombatState ) = copy( combatState = cs )
   def withName( name: String ) = copy( ship = ship.copy( name = name ) )
-  
+
   def reload( data: DataModel ) : ShipModel = {
     if ( !data.races.contains(hull.race)) return ShipModel.empty
     if ( !data.hulls(hull.race).contains(hull) ) return ShipModel.empty
@@ -189,7 +189,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
        )
     newModel.copy( ship = ship.copy( requiredModsList = data.loadedMods))
   }
-  
+
   val cost = allModules.values.map(_.cost).sum
   val upkeep = allSlots.size.toDouble * 0.01
   val powerCapacity = allModules.values
@@ -206,7 +206,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       .map(_.shieldPower)
       .sum
   val mass = {
-    val hullMass = (allSlots.size / 2) 
+    val hullMass = (allSlots.size / 2)
     val moduleMass = math.max( 0, allModules.values.map(_.mass).sum )
     hullMass + moduleMass
   }
@@ -214,7 +214,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   val sublightThrust = engines.map(_.thrust).sum
   val warpThrust = engines.map(_.warpThrust).sum
   val turnThrust = engines.map(_.turnThrust).sum
-  val sublightSpeed = if ( mass == 0 ) 0 else sublightThrust / mass 
+  val sublightSpeed = if ( mass == 0 ) 0 else sublightThrust / mass
   val ftlSpeed = if ( mass == 0 ) 0 else ( warpThrust / mass ) * 35
   val turnRate = if ( mass == 0 ) 0 else math.toDegrees(( turnThrust.toDouble / mass ) / 700)
   val ordnanceCapacity = allModules.values
@@ -225,7 +225,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       .sum
   val hasCommandModule = allModules.values
       .exists(mod => mod.uid == "CIC" || mod.uid =="Cockpit" || mod.uid == "Bridge" )
-      
+
   val hasEmptySlots = {
     val slots = mutable.Map[Point, HullModuleSlot](allSlots.toSeq:_*)
 
@@ -240,7 +240,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
 
     !slots.isEmpty
   }
-  
+
   private def computePowerGrid : ShipModel = {
     val dePowered = slots.mapValues(_.copy(power = false))
 
