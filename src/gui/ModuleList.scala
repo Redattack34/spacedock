@@ -118,6 +118,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
       val path = new TreePath(node.getPath().asInstanceOf[Array[Object]])
       tree.expandPath(path)
       tree.setSelectionPath(path)
+      publish(ModuleSelected(mod))
     }
     case ReloadFromModel => {
       weapon.removeAllChildren()
