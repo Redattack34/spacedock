@@ -29,6 +29,7 @@ import scala.swing.event.KeyTyped
 import scala.swing.event.KeyReleased
 import scala.swing.event.Key
 import scala.annotation.tailrec
+import data.general.RangeOverlap._
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -469,15 +470,34 @@ class ShipEditor(dataModel: DataModel) extends Component {
     val Point(x, y) = p
     val rect = getRect(x, y, mod.xSize, mod.ySize)
 
-    g2.drawImage(dataModel.moduleImage(mod).getImage,
-        rect.x, rect.y, rect.width, rect.height, null)
+    val highlight =
+      if ( !mode.isPlacement ) false
+      else {
+        val xSizeMouse = mode.module.map(_.xSize).getOrElse(1)
+        val ySizeMouse = mode.module.map(_.ySize).getOrElse(1)
+
+        val xRangeMouse = mouseOver.x until mouseOver.x + xSizeMouse
+        val yRangeMouse = mouseOver.y until mouseOver.y + ySizeMouse
+
+        val xRangeMod = p.x until p.x + mod.xSize
+        val yRangeMod = p.y until p.y + mod.ySize
+
+        xRangeMouse.overlapsWith(xRangeMod) &&
+          yRangeMouse.overlapsWith(yRangeMod)
+      }
+
+    val moduleImage = dataModel.moduleImage(mod)
+    val image = if ( highlight ) moduleImage.highlight
+                else moduleImage.img
+
+    g2.drawImage(image, rect.x, rect.y, rect.width, rect.height, null)
   }
 
   private def drawLightningBolt( g2: Graphics2D, p: Point, mod: ShipModule ) {
     val Point(x, y) = p
     val rect = getRect(x, y, mod.xSize, mod.ySize)
 
-    g2.drawImage(dataModel.lightningBolt.getImage,
+    g2.drawImage(dataModel.lightningBolt,
         rect.x, rect.y, rect.width, rect.height, null)
   }
 

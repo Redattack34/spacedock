@@ -77,7 +77,7 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
       moduleName.text = token(mod.nameIndex)
       description.text = "<html>" + token(mod.descriptionIndex) + "</html>"
       restrictions.text = "Restrictions: " + mod.restrictions.description
-      image.icon = moduleImage(mod)
+      image.icon = moduleImage(mod).icon
       itemSize.text = "Size: " + mod.xSize + "x" + mod.ySize
       mass.text = "Mass: " + mod.mass
       cost.text = "Cost: " + mod.cost

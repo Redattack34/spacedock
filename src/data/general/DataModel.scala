@@ -26,7 +26,23 @@ import gui.UnloadMod
 import data.xml.Technology
 import data.xml.Research
 import com.weiglewilczek.slf4s.Logging
+import java.awt.image.BufferedImage
+import java.awt.image.RescaleOp
+import java.awt.RenderingHints
+import java.awt.Image
 
+class ModuleImage( val img: BufferedImage ) {
+  lazy val highlight : BufferedImage = {
+    val op = new RescaleOp( Array[Float](2.0f, 1.0f, 1.0f, 1.0f),
+        Array[Float](0.0f, 0.0f, 0.0f, 0.0f ), null.asInstanceOf[RenderingHints] )
+    val dst = new BufferedImage( img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    dst.getGraphics().drawImage( img, 0, 0, null )
+    op.filter(img, dst)
+    dst
+  }
+
+  lazy val icon = new ImageIcon( img )
+}
 class ModData(val name: String, val dir: File) extends Logging {
   import DataModel._
 
@@ -42,13 +58,13 @@ class ModData(val name: String, val dir: File) extends Logging {
   val tokens : Map[Int, String] = loadTokens(englishFile)
   val weapons : Map[String, Weapon] = showErrors(Weapon.loadAll(dir)).map( weap => (weap.name, weap)).toMap
   val modules : Map[String, ShipModule] = showErrors(Module.loadAll(dir)).map( mod => (mod.uid, mod)).toMap
-  val moduleImages : Map[String, ImageIcon] = loadModuleTextures
+  val moduleImages : Map[String, ModuleImage] = loadModuleTextures
   val shipDesigns : Map[String, Ship] = showErrors(Ship.loadAll(dir)).map( ship => (ship.name, ship)).toMap
   val technologies : Seq[Technology] = showErrors(Research.loadAll(dir))
   val techsByMod = technologies.flatMap(t => t.modules.map( (_, t) )).toMap
   val techsByHull = technologies.flatMap(t => t.hulls.map( (_, t) )).toMap
 
-  private def loadModuleTextures : Map[String, ImageIcon] = {
+  private def loadModuleTextures : Map[String, ModuleImage] = {
     val dir = this.dir / 'Textures / 'Modules
 
     if ( !dir.exists() ) return Map()
@@ -89,7 +105,7 @@ class DataModel extends Publisher with Reactor {
 
   var customShipDesigns = showErrors(Ship.loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
-  val lightningBolt : ImageIcon = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get
+  val lightningBolt : Image = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get.img
 
   def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
   def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
@@ -185,7 +201,7 @@ object DataModel extends Logging {
   }
 
 
-  def loadTexture(f: File) : Option[ImageIcon] = {
+  def loadTexture(f: File) : Option[ModuleImage] = {
     XnbReader.read(f) match {
       case Left(ex) => {
         logger.error("Failed to load texture: " + f.getAbsolutePath, ex)
@@ -193,7 +209,7 @@ object DataModel extends Logging {
             "SpaceDock: Failed to Load Texture", JOptionPane.ERROR_MESSAGE)
         None
       }
-      case Right(im) => Some(new ImageIcon(im))
+      case Right(im) => Some(new ModuleImage(im.asInstanceOf[BufferedImage]))
     }
   }
 }
