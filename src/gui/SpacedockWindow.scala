@@ -33,6 +33,7 @@ object Spacedock extends SimpleSwingApplication {
 
   val modules: Component = new ModuleList(dataModel)
   val shipEditor: Component = new ShipEditor(dataModel)
+  val editorScroll: ScrollPane = new ScrollPane(shipEditor){ verticalScrollBar.unitIncrement = 16 }
   val shipStats: Component = new ShipStats(dataModel)
   val moduleStats: Component = new ModuleStats(dataModel)
   val sdMenuBar: MenuBar = new SpacedockMenu(dataModel)
@@ -55,6 +56,7 @@ object Spacedock extends SimpleSwingApplication {
   modWindow.listenTo(sdMenuBar)
 
   this.listenTo(shipEditor)
+  this.listenTo(sdMenuBar)
 
   dataModel.listenTo(modWindow)
 
@@ -76,7 +78,7 @@ object Spacedock extends SimpleSwingApplication {
     orientation = Orientation.Vertical
     resizeWeight = 0.8
     oneTouchExpandable = true
-    leftComponent = new ScrollPane( shipEditor )
+    leftComponent = editorScroll
     rightComponent = toolPaneTop
   }
 
@@ -89,5 +91,6 @@ object Spacedock extends SimpleSwingApplication {
 
   reactions += {
     case ShipModelChanged(newModel) => top.title = "Spacedock: " + newModel.ship.name
+    case ZoomSet(zoom) => editorScroll.verticalScrollBar.unitIncrement = if (zoom) 32 else 16
   }
 }

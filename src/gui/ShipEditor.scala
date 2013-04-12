@@ -33,7 +33,7 @@ import scala.annotation.tailrec
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
 case class ShipSaved( ship: Ship ) extends Event
-class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
+class ShipEditor(dataModel: DataModel) extends Component {
 
   type AwtPoint = java.awt.Point;
 
@@ -60,12 +60,6 @@ class ShipEditor(dataModel: DataModel) extends Component with Scrollable {
   private val shieldColor = new Color(0, 200, 255)
 
   def preferredViewportSize: Dimension = this.preferredSize
-
-  def tracksViewportHeight: Boolean = true
-  def tracksViewportWidth: Boolean = true
-
-  def blockIncrement(visibleRect: Rectangle, orientation: Orientation.Value, direction: Int): Int = zoom
-  def unitIncrement(visibleRect: Rectangle, orientation: Orientation.Value, direction: Int): Int = zoom
 
   private var _zoom = 16;
   private def zoom = _zoom
