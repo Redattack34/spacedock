@@ -9,10 +9,16 @@
 	
 	<dependencies>
 	   <dependency name="guava" org="com.google.guava" rev="14.0"/>
-	   <dependency name="anti-xml_2.9.1" org="com.codecommit" rev="0.3">
-	     <exclude module="scala-library"/>
-	   </dependency>
+	   <dependency name="anti-xml_2.9.1" org="com.codecommit" rev="0.3"/>
 	   <dependency name="slf4s_2.9.1" org="com.weiglewilczek.slf4s" rev="1.0.7" />
 	   <dependency name="logback-classic" org="ch.qos.logback" rev="1.0.11"/>
+	   
+	   <exclude module="scala-library"/>
+	   <exclude module="groovy-all"/>
+	   <exclude module="janino"/>
+	   <exclude module="mail"/>
+	   <exclude module="commons-compiler"/>
+	   <exclude module="servlet-api"/>
+	   <exclude module="geronimo-jms_1.1_spec"/>
 	</dependencies>
 </ivy-module>
