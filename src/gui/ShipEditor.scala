@@ -36,6 +36,16 @@ case class ShipModelChanged( model: ShipModel ) extends Event
 case class ShipSaved( ship: Ship ) extends Event
 class ShipEditor(dataModel: DataModel) extends Component {
 
+  private case class State(
+        val zoom : Int,
+        val showArcs: Boolean,
+        val mirror: Boolean,
+        val mouseOver: Point,
+        val mode: EditorMode,
+        val showEmpty: Int,
+        val showGrid: Boolean
+      )
+
   type AwtPoint = java.awt.Point;
 
   sealed trait EditorMode {
@@ -62,31 +72,20 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
   def preferredViewportSize: Dimension = this.preferredSize
 
-  private var _zoom = 16;
-  private def zoom = _zoom
-  private def zoom_=(z: Boolean) = {
-    z match {
-      case true => _zoom = 32
-      case false => _zoom = 16
-    }
-    resize
-  }
-
-  private var _arcs = false;
-  private def showArcs = _arcs;
-  private def showArcs_=(a: Boolean) {
-    _arcs = a
+  private var _state = State(16, false, false, Point(0, 0), NormalMode, 0, false)
+  private def state = _state
+  private def state_=( state: State ) = {
+    this._state = state
     repaint
   }
 
-  private var _mirror = false;
-  private def mirror = _mirror;
-  private def mirror_=(a: Boolean) {
-    _mirror = a
-    repaint
-  }
-
-  def blockIncrement() = zoom
+  private def zoom = state.zoom
+  private def showArcs = state.showArcs
+  private def mirror = state.mirror
+  private def mouseOver = state.mouseOver
+  private def mode = state.mode
+  private def showEmpty = state.showEmpty
+  private def showGrid = state.showGrid
 
   private var _shipModel = ShipModel.empty
   private def shipModel = _shipModel
@@ -98,38 +97,6 @@ class ShipEditor(dataModel: DataModel) extends Component {
     if ( oldModel.width !=  newModel.width ||
          oldModel.height != newModel.height ) resize
     else repaint
-  }
-
-  private var _mouseOver : Point = Point(0, 0)
-  private def mouseOver = _mouseOver
-  private def mouseOver_=( p: Point ) = {
-    if ( _mouseOver != p ) {
-      _mouseOver = p
-      repaint
-    }
-  }
-
-  private var _mode: EditorMode = NormalMode
-  private def mode = _mode
-  private def mode_=(newMode: EditorMode) = {
-    if ( newMode != _mode ) {
-      _mode = newMode
-      repaint
-    }
-  }
-
-  private var _showEmpty = 0
-  private def showEmpty = _showEmpty
-  private def showEmpty_=(newShow: Int) = {
-    this._showEmpty = newShow
-    repaint
-  }
-
-  private var _showGrid = false
-  private def showGrid = _showGrid
-  private def showGrid_=(show: Boolean) = {
-    this._showGrid = show
-    repaint
   }
 
   private def resize : Unit = {
@@ -220,17 +187,17 @@ class ShipEditor(dataModel: DataModel) extends Component {
   reactions += {
     case ReloadFromModel => {
       shipModel = shipModel.reload(dataModel)
-      mode = NormalMode
+      state = state.copy( mode = NormalMode )
     }
     case HullSelected( newHull ) => shipModel = ShipModel( dataModel, newHull )
     case ShipSelected( newShip, newHull ) => shipModel = ShipModel( dataModel, newHull, newShip )
-    case ZoomSet( newZoom ) => this.zoom = newZoom
-    case FiringArcsSet( newShow ) => this.showArcs = newShow
-    case MirroringSet( newMirror ) => this.mirror = newMirror
-    case ShowGridSet( newShow ) => this.showGrid = newShow
-    case ShowEmptySlots => this.showEmpty = 100
+    case ZoomSet( newZoom ) => state = state.copy( zoom = if (newZoom) 32 else 16 )
+    case FiringArcsSet( newShow ) => state = state.copy( showArcs = newShow )
+    case MirroringSet( newMirror ) => state = state.copy( mirror = newMirror )
+    case ShowGridSet( newShow ) => state = state.copy( showGrid = newShow )
+    case ShowEmptySlots => state = state.copy( showEmpty = 100 )
     case FillEmptySlots => fillEmptySlots()
-    case ModuleSelected(mod) => this.mode = PlacementMode(mod)
+    case ModuleSelected(mod) => state = state.copy( mode = PlacementMode(mod) )
     case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
       val name = getName()
@@ -249,11 +216,11 @@ class ShipEditor(dataModel: DataModel) extends Component {
       }
     }
 
-    case MouseMoved(comp, loc, _) if comp == this => mouseOver = getMouseOver(loc)
+    case MouseMoved(comp, loc, _) if comp == this => state = state.copy( mouseOver = getMouseOver(loc) )
     case e@MouseDragged(comp, loc, _) if comp == this => {
       this.requestFocus
       val oldMouseOver = mouseOver
-      mouseOver = getMouseOver(loc)
+      state = state.copy( mouseOver = getMouseOver(loc) )
       if (  mode.isFacing ) {
         val FacingMode(mods) = mode
         val filtered = mods.filter(_._2.moduleType == "Turret")
@@ -283,7 +250,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
     }
   }
 
-  private def dropModule = this.mode = NormalMode
+  private def dropModule = state = state.copy( mode = NormalMode )
 
   def mirrorChange(model: ShipModel, xSize: Int, p: Point,
       f: (ShipModel, Point) => ShipModel ) : ShipModel =
@@ -301,14 +268,14 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
   private def middleClick : Unit = {
     val clickedOn = shipModel.moduleAt(mouseOver)
-    clickedOn.foreach{ mod => mode = PlacementMode(mod); publish(ModulePickedUp(mod))}
+    clickedOn.foreach{ mod => state = state.copy( mode = PlacementMode(mod)); publish(ModulePickedUp(mod))}
   }
 
   private def rightClick : Unit = {
     if ( shipModel.isValidPoint(mouseOver)) {
       shipModel = mirrorChange(shipModel, 1, mouseOver, _.removeModule(_) )
     }
-    else this.mode = NormalMode
+    else state = state.copy( mode = NormalMode )
   }
 
   private def leftClick(e: MouseEvent) : Unit = {
@@ -341,7 +308,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
             if ( mods.contains(tuple) ) mods - tuple
             else mods + tuple
           } else Set(tuple)
-          mode = FacingMode(newMods)
+          state = state.copy( mode = FacingMode(newMods) )
         }
       }
     }
@@ -441,7 +408,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
         drawGrid( g2, point, slot )
       }
 
-      if ( showEmpty > 0) { showEmpty -= 1 }
+      if ( showEmpty > 0) { state = state.copy( showEmpty = showEmpty - 1 ) }
     }
   }
 
