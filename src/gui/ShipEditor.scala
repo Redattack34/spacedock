@@ -125,6 +125,13 @@ class ShipEditor(dataModel: DataModel) extends Component {
     repaint
   }
 
+  private var _showGrid = false
+  private def showGrid = _showGrid
+  private def showGrid_=(show: Boolean) = {
+    this._showGrid = show
+    repaint
+  }
+
   private def resize : Unit = {
     val newWidth = shipModel.width + 20
     val newHeight = shipModel.height + 20
@@ -209,6 +216,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
   def getName() = JOptionPane.showInputDialog(this.peer, "Name:",
           "Save Ship", JOptionPane.QUESTION_MESSAGE)
 
+  def newReactions = Unit
   reactions += {
     case ReloadFromModel => {
       shipModel = shipModel.reload(dataModel)
@@ -219,6 +227,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
     case ZoomSet( newZoom ) => this.zoom = newZoom
     case FiringArcsSet( newShow ) => this.showArcs = newShow
     case MirroringSet( newMirror ) => this.mirror = newMirror
+    case ShowGridSet( newShow ) => this.showGrid = newShow
     case ShowEmptySlots => this.showEmpty = 100
     case FillEmptySlots => fillEmptySlots()
     case ModuleSelected(mod) => this.mode = PlacementMode(mod)
@@ -426,7 +435,14 @@ class ShipEditor(dataModel: DataModel) extends Component {
       }
     }
 
-    if ( showEmpty > 0) { showEmpty -= 1 }
+    if ( showGrid ) {
+      if ( !shipModel.allSlots.isEmpty ) {
+        val (point, slot) = shipModel.allSlots.head
+        drawGrid( g2, point, slot )
+      }
+
+      if ( showEmpty > 0) { showEmpty -= 1 }
+    }
   }
 
   private def drawSlot(g2: Graphics2D, p: Point, slot: HullModuleSlot ): Unit = {
@@ -536,5 +552,24 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
     g2.setColor(shieldColor)
     g2.drawOval(x.toInt, y.toInt, diameter, diameter)
+  }
+
+  private def drawGrid( g2: Graphics2D, p: Point, slot: HullModuleSlot ) {
+    g2.setColor(Color.BLACK)
+    g2.setStroke(new BasicStroke(1))
+
+    for ( x <- 0 to (this.size.width / zoom) ) {
+      val linePos = (x * zoom)
+      g2.drawLine(linePos, 0, linePos, this.size.height)
+      val xVal = ((x - (p.x + 10)) * 16) + slot.pos.x
+      g2.drawString( xVal.toString, linePos + 5, 10);
+    }
+
+    for ( y <- 0 to (this.size.height / zoom) ) {
+      val linePos = (y * zoom)
+      g2.drawLine(0, linePos, this.size.width, linePos)
+      val yVal = ((y - (p.y + 10)) * 16) + slot.pos.y
+      g2.drawString( yVal.toString, 3, linePos - 5);
+    }
   }
 }

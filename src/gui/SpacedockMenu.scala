@@ -30,6 +30,7 @@ case class CombatStateSet( state: CombatState ) extends Event
 case object SaveShip extends Event
 case class SaveAs(file: File) extends Event
 case object OpenModWindow extends Event
+case class ShowGridSet( showGrid: Boolean ) extends Event
 
 class SpacedockMenu( data: DataModel ) extends MenuBar {
 
@@ -39,6 +40,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object ZoomMenuItem extends CheckMenuItem("Zoom")
   case object ShowFiringArcsItem extends CheckMenuItem("Show Firing Arcs and Shields")
   case object MirrorItem extends CheckMenuItem("Mirror Changes")
+  case object ShowGridItem extends CheckMenuItem("Show Position Grid")
   case object ShowEmptySlotsItem extends MenuItem("Highlight Empty Slots")
   case object FillEmptySlotsItem extends MenuItem("Fill Empty Slots")
 
@@ -79,7 +81,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   val toolsMenu = new Menu("Tools")
   toolsMenu.contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem,
-      ShowEmptySlotsItem, FillEmptySlotsItem )
+      ShowGridItem, ShowEmptySlotsItem, FillEmptySlotsItem )
 
   var hullMenuItems = Map[String, Menu]()
 
@@ -119,8 +121,9 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   contents ++= Seq( fileMenu, shipsMenu, toolsMenu, attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
-  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowEmptySlotsItem,
-      FillEmptySlotsItem, attackRuns, artillery, holdPosition, orbitPort, orbitStarboard, evade)
+  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowGridItem,
+      ShowEmptySlotsItem, FillEmptySlotsItem, attackRuns, artillery,
+      holdPosition, orbitPort, orbitStarboard, evade)
 
   def shipLoaded(shipOpt: Option[Ship]) = {
     if ( shipOpt.isEmpty ) {
@@ -182,6 +185,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ZoomMenuItem) => publish( ZoomSet( ZoomMenuItem.selected ) )
     case ButtonClicked(ShowFiringArcsItem) => publish( FiringArcsSet( ShowFiringArcsItem.selected ) )
     case ButtonClicked(MirrorItem) => publish( MirroringSet( MirrorItem.selected ) )
+    case ButtonClicked(ShowGridItem) => publish( ShowGridSet( ShowGridItem.selected ) )
     case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots )
     case ButtonClicked(FillEmptySlotsItem) => publish( FillEmptySlots )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
