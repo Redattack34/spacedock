@@ -98,7 +98,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       for {
         hull <- data.hulls(race)
       } {
-        val hullMenu = new Menu(hull.name + "...")
+        val hullMenu = new Menu(hull.name + " (" + hull.role + ")")
         raceMenu.contents += hullMenu
         hullMenuItems += (hull.name -> hullMenu)
 
