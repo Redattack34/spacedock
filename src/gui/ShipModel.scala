@@ -13,6 +13,7 @@ import data.xml.ShipModule
 import data.xml.Ship
 import data.xml.HullModuleSlot
 import data.xml.ShipModuleSlot
+import data.xml.ShipModule
 
 case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boolean, facing: Float, slotOption: Option[String] )
 
@@ -38,14 +39,14 @@ object ShipModel {
           shipSlot.flatMap(_.slotOptions) )
     }
 
-    val pointSlots = modelSlots.map( tuple => ( Point(tuple._1.x / 16, tuple._1.y / 16), tuple._2) )
+    val pointSlots = modelSlots.map{ case (point, slot) => ( Point(point.x / 16, point.y / 16), slot) }
 
     val minSlots = if ( pointSlots.isEmpty ) pointSlots
                    else {
                      val minX = pointSlots.keys.minBy(_.x).x
                      val minY = pointSlots.keys.minBy(_.y).y
 
-                     pointSlots.map( tuple => ( Point(tuple._1.x - minX, tuple._1.y - minY), tuple._2 ) )
+                     pointSlots.map{ case (point, slot) => ( Point(point.x - minX, point.y - minY), slot ) }
                    }
 
     new ShipModel( hull, ship, ship.combatState.getOrElse(AttackRuns), minSlots ).computePowerGrid
@@ -96,9 +97,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
 
 
   def modulesOverlapping( x: Range, y: Range ) = {
-    slots.view.filter(_._2.module != dummy).filter{ tuple =>
-      val (p, slot) = tuple
-
+    slots.view.filter(_._2.module != dummy).filter{ case (p, slot) =>
       ( p.x until p.x + slot.module.xSize overlapsWith x ) &&
       ( p.y until p.y + slot.module.ySize overlapsWith y )
     }.toMap
@@ -146,25 +145,28 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     return true
   }
 
+
   def placeModule( point: Point, newModule: ShipModule ) : ShipModel =
     placeModule( point, newModule, None )
   def placeModule( point: Point, module: ShipModule, option: Option[String] ) : ShipModel = {
-    if ( !canPlace(point, module) ) return this;
+    val model = placeWithoutComputingPowerGrid(point, module, option)
+    if ( module.powerPlantData.isDefined ) model.computePowerGrid
+    else model
+  }
 
-    val xRange = point.x until point.x + module.xSize
-    val yRange = point.y until point.y + module.ySize
+  private def placeWithoutComputingPowerGrid( point: Point, module: ShipModule, option: Option[String] ) : ShipModel = {
+      if ( !canPlace(point, module) ) return this;
 
-    val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
-    val removed : Map[Point, ModelSlot] = toBeRemoved.map{ tuple =>
-      val (p, slot) = tuple
+      val xRange = point.x until point.x + module.xSize
+      val yRange = point.y until point.y + module.ySize
+
+      val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
+      val removed : Map[Point, ModelSlot] = toBeRemoved.map{ case (p, slot) =>
       (p, slot.copy( module = dummy, slotOption = None, facing = 90.0f))
-    }
+      }
 
-    val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = module, slotOption = option ) )
-    val copyModel = copy( slots = slots ++ toBePlaced )
-
-    if ( module.powerPlantData.isDefined ) copyModel.computePowerGrid
-    else copyModel
+      val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = module, slotOption = option ) )
+              copy( slots = slots ++ toBePlaced )
   }
 
   def setFacing( p: Point, f: Float ) : ShipModel = {
@@ -188,6 +190,23 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
          acc.placeModule(slot._1, data.module(slot._2.module.uid))
        )
     newModel.copy( ship = ship.copy( requiredModsList = data.loadedMods))
+  }
+
+  def fillEmptySlots(mod: ShipModule) : ShipModel = {
+    val leftRange = (0 to midPoint.toInt + 1)
+    val rightRange = (width to midPoint.toInt by -1)
+    val xRange = leftRange.toSeq ++ rightRange
+
+    val model = (0 to height).foldLeft(this){ (model, y) =>
+      xRange.foldLeft(model){ (model, x) =>
+        val point = Point(x, y)
+        if ( model.canPlace(Point(x, y), mod) &&
+             model.modulesOverlapping(x until x + mod.xSize, y until y + mod.ySize ).isEmpty
+           ) model.placeWithoutComputingPowerGrid(Point(x, y), mod, None)
+        else model
+      }
+    }
+    if ( mod.powerPlantData.isDefined ) model.computePowerGrid else model
   }
 
   val cost = allModules.values.map(_.cost).sum
@@ -226,26 +245,12 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   val hasCommandModule = allModules.values
       .exists(mod => mod.uid == "CIC" || mod.uid =="Cockpit" || mod.uid == "Bridge" )
 
-  val hasEmptySlots = {
-    val slots = mutable.Map[Point, HullModuleSlot](allSlots.toSeq:_*)
-
-    allModules.foreach { tuple =>
-      val (point, module) = tuple
-
-      for {
-        x <- point.x until point.x + module.xSize
-        y <- point.y until point.y + module.ySize
-      } slots -= Point(x, y)
-    }
-
-    !slots.isEmpty
-  }
+  val hasEmptySlots = allSlots.keys.exists( moduleAt(_).isEmpty )
 
   private def computePowerGrid : ShipModel = {
     val dePowered = slots.mapValues(_.copy(power = false))
 
-    val toBePowered = dePowered.filter(_._2.module != dummy).foldLeft(dePowered) { (map, tuple) =>
-        val (modPoint, modSlot) = tuple
+    val toBePowered = dePowered.filter(_._2.module != dummy).foldLeft(dePowered) { case (map, (modPoint, modSlot)) =>
         addPoweredSlots(modPoint, modSlot.module, map, _.copy( power = true))
     }
     copy(slots = toBePowered)

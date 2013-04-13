@@ -196,7 +196,12 @@ class ShipEditor(dataModel: DataModel) extends Component {
     case MirroringSet( newMirror ) => state = state.copy( mirror = newMirror )
     case ShowGridSet( newShow ) => state = state.copy( showGrid = newShow )
     case ShowEmptySlots => state = state.copy( showEmpty = 100 )
-    case FillEmptySlots => fillEmptySlots()
+    case FillEmptySlots => {
+      if ( mode.isPlacement ) {
+        val PlacementMode(mod) = mode
+        shipModel = shipModel.fillEmptySlots(mod)
+      }
+    }
     case ModuleSelected(mod) => state = state.copy( mode = PlacementMode(mod) )
     case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
@@ -314,25 +319,6 @@ class ShipEditor(dataModel: DataModel) extends Component {
     }
   }
 
-  def fillEmptySlots() {
-    if ( !mode.isPlacement ) return;
-    val PlacementMode(mod) = mode
-
-    val leftRange = (0 to shipModel.midPoint.toInt + 1)
-    val rightRange = (shipModel.width to shipModel.midPoint.toInt by -1)
-    val xRange = leftRange.toSeq ++ rightRange
-
-    shipModel = (0 to shipModel.height).foldLeft(shipModel){ (model, y) =>
-      xRange.foldLeft(model){ (model, x) =>
-        val point = Point(x, y)
-        if ( model.canPlace(Point(x, y), mod) &&
-             model.modulesOverlapping(x until x + mod.xSize, y until y + mod.ySize ).isEmpty
-           ) model.placeModule(Point(x, y), mod)
-        else model
-      }
-    }
-  }
-
   def getRect(x: Int, y: Int, w: Int = 1, h: Int = 1) =
     new Rectangle((x + 10) * zoom + 2, (y + 10) * zoom + 2, (w * zoom) - 4, (h * zoom) - 4)
 
@@ -374,8 +360,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
         drawFiringArc( g2, p, facing, module )
         if ( mirror ) {
           val p2 = reflected(p, module.xSize)
-          shipModel.allWeapons.get(p2).foreach{ tuple =>
-            val (facing2, module2) = tuple
+          shipModel.allWeapons.get(p2).foreach{ case (facing2, module2) =>
             drawFiringArc( g2, p2, facing2, module2 )
           }
         }
