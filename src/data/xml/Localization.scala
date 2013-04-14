@@ -2,8 +2,6 @@ package data.xml
 
 import java.io.File
 
-import scala.Array.canBuildFrom
-
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.XML

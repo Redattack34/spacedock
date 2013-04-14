@@ -2,13 +2,12 @@ package data.xml
 
 import java.io.File
 
-import scala.Array.canBuildFrom
-
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
-import data.general.FileExtension._
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 
 case class Weapon( name: String, weaponType: String, range: Int,
     fireDelay: Float, projectileCount: Option[Int], projectileSpeed: Option[Int],

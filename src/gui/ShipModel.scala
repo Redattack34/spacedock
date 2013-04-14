@@ -14,6 +14,7 @@ import data.xml.Ship
 import data.xml.HullModuleSlot
 import data.xml.ShipModuleSlot
 import data.xml.ShipModule
+import scalaz.Scalaz._
 
 case class ModelSlot( hullSlot: HullModuleSlot, module: ShipModule, power: Boolean, facing: Float, slotOption: Option[String] )
 
@@ -31,7 +32,7 @@ object ShipModel {
     val modelSlots = hullSlots.mapValues{ slot =>
       val shipSlot = shipModules.get(slot.pos)
       val module = shipSlot.map(_.installed) match {
-        case Some(x) if x != "Dummy" => dataModel.module(x)
+        case Some(x) if x =/= "Dummy" => dataModel.module(x)
         case _ => dummy
       }
 
@@ -69,10 +70,16 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   val midPoint = (width.toDouble + 1) / 2
 
   val allSlots = slots.mapValues(_.hullSlot)
-  val allModules = slots.mapValues(_.module).filter(_._2 != dummy)
+  val allModules = slots.mapValues(_.module).filter{notDummy}
   val allWeapons = slots.filter(_._2.module.weaponData.isDefined).mapValues{ slot =>
     (slot.facing, slot.module)
   }
+  
+  private def notDummy( t: Tuple2[_,_] ) : Boolean = t match {
+    case (_, mod: ShipModule) => notDummy(mod)
+    case (_, slot: ModelSlot) => notDummy(slot.module)
+  }
+  private def notDummy( mod: ShipModule ) : Boolean = mod != dummy
 
   private def copy( hull: Hull = this.hull, ship: Ship = this.ship,
       combatState: CombatState = this.combatState, slots: Map[Point, ModelSlot] = this.slots ) : ShipModel =
@@ -97,7 +104,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
 
 
   def modulesOverlapping( x: Range, y: Range ) = {
-    slots.view.filter(_._2.module != dummy).filter{ case (p, slot) =>
+    slots.view.filter(notDummy).filter{ case (p, slot) =>
       ( p.x until p.x + slot.module.xSize overlapsWith x ) &&
       ( p.y until p.y + slot.module.ySize overlapsWith y )
     }.toMap
@@ -114,7 +121,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   def isValidPoint( point: Point ) = slots.contains(point)
 
   def removeModule( point: Point ) : ShipModel = {
-    val moduleToRemove = moduleOnPoint(point).filter( _._2.module != dummy )
+    val moduleToRemove = moduleOnPoint(point).filter(notDummy)
 
     if (moduleToRemove.isEmpty) return this
 
@@ -124,7 +131,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     copy( slots = slots ++ toBeReplaced ).computePowerGrid
   }
 
-  def moduleAt( point: Point ) = moduleOnPoint(point).values.map(_.module).filter(_ != dummy).headOption
+  def moduleAt( point: Point ) = moduleOnPoint(point).values.map(_.module).filter(notDummy).headOption
   def weaponAt( point: Point ) = moduleOnPoint(point)
       .filter( _._2.module.weaponData.isDefined )
       .mapValues(_.module)
@@ -160,9 +167,9 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       val xRange = point.x until point.x + module.xSize
       val yRange = point.y until point.y + module.ySize
 
-      val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(_._2.module != dummy)
+      val toBeRemoved = modulesOverlapping( xRange, yRange ).filter(notDummy)
       val removed : Map[Point, ModelSlot] = toBeRemoved.map{ case (p, slot) =>
-      (p, slot.copy( module = dummy, slotOption = None, facing = 90.0f))
+        (p, slot.copy( module = dummy, slotOption = None, facing = 90.0f))
       }
 
       val toBePlaced = removed + (point -> removed.get(point).getOrElse(slots(point)).copy( module = module, slotOption = option ) )
@@ -184,7 +191,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     if ( !data.races.contains(hull.race)) return ShipModel.empty
     if ( !data.hulls(hull.race).contains(hull) ) return ShipModel.empty
     val allModules = data.modules
-    val newModel = slots.filter( _._2.module != dummy)
+    val newModel = slots.filter(notDummy)
        .filter( t => allModules.contains( t._2.module.uid ) )
        .foldLeft(ShipModel(data, hull))( (acc, slot) =>
          acc.placeModule(slot._1, data.module(slot._2.module.uid))
@@ -233,9 +240,9 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   val sublightThrust = engines.map(_.thrust).sum
   val warpThrust = engines.map(_.warpThrust).sum
   val turnThrust = engines.map(_.turnThrust).sum
-  val sublightSpeed = if ( mass == 0 ) 0 else sublightThrust / mass
-  val ftlSpeed = if ( mass == 0 ) 0 else ( warpThrust / mass ) * 35
-  val turnRate = if ( mass == 0 ) 0 else math.toDegrees(( turnThrust.toDouble / mass ) / 700)
+  val sublightSpeed = if ( mass === 0 ) 0 else sublightThrust / mass
+  val ftlSpeed = if ( mass === 0 ) 0 else ( warpThrust / mass ) * 35
+  val turnRate = if ( mass === 0 ) 0 else math.toDegrees(( turnThrust.toDouble / mass ) / 700)
   val ordnanceCapacity = allModules.values
       .flatMap(_.ordnanceCapacity)
       .sum
@@ -243,14 +250,14 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
       .flatMap(_.cargoCapacity)
       .sum
   val hasCommandModule = allModules.values
-      .exists(mod => mod.uid == "CIC" || mod.uid =="Cockpit" || mod.uid == "Bridge" )
+      .exists(mod => mod.uid === "CIC" || mod.uid ==="Cockpit" || mod.uid === "Bridge" )
 
   val hasEmptySlots = allSlots.keys.exists( moduleAt(_).isEmpty )
 
   private def computePowerGrid : ShipModel = {
     val dePowered = slots.mapValues(_.copy(power = false))
 
-    val toBePowered = dePowered.filter(_._2.module != dummy).foldLeft(dePowered) { case (map, (modPoint, modSlot)) =>
+    val toBePowered = dePowered.filter(notDummy).foldLeft(dePowered) { case (map, (modPoint, modSlot)) =>
         addPoweredSlots(modPoint, modSlot.module, map, _.copy( power = true))
     }
     copy(slots = toBePowered)
@@ -258,7 +265,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
 
   private def addPoweredSlots( point: Point, module: ShipModule,
       changed: Map[Point, ModelSlot], f : ModelSlot => ModelSlot ) : Map[Point, ModelSlot] =
-    if ( module.powerPlantData.isEmpty || module.powerPlantData.get.powerRadius == 0)
+    if ( module.powerPlantData.isEmpty || module.powerPlantData.get.powerRadius === 0)
       changed
     else {
       changed ++ slotsPoweredBy(point, module).map{ point =>
@@ -268,11 +275,11 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     }
 
   private def slotsPoweredBy(point: Point, module: ShipModule) : Set[Point] = {
-    if ( module.moduleType == "PowerConduit" ) return Set()
+    if ( module.moduleType === "PowerConduit" ) return Set()
     val buffer = mutable.Map[Point, Int]()
 
     def addAdjacent( range: Int, p: Point) : Unit = {
-      if (range == 0) return
+      if (range === 0) return
       if (buffer.get(p).getOrElse(0) >= range) return
 
       val Point(x, y) = p
@@ -295,7 +302,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     def addConduits( p: Point ) {
       if (conduits.contains(p)) return;
       if ( !slots.contains(p)) return
-      if ( slots(p).module.moduleType != "PowerConduit" ) return;
+      if ( slots(p).module.moduleType =/= "PowerConduit" ) return;
 
       conduits.add(p)
 

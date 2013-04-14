@@ -4,27 +4,27 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
-import java.net.URL
-import scala.Array.canBuildFrom
+
 import scala.xml.PrettyPrinter
+
+import scalaz.Scalaz._
+
 import com.codecommit.antixml.Attributes
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Group
 import com.codecommit.antixml.Node
 import com.codecommit.antixml.Selector.symbolToSelector
 import com.codecommit.antixml.Text
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.stringTupleToQNameTuple
 import com.codecommit.antixml.text
 import com.google.common.base.Charsets
-import data.general.DataModel
-import data.general.FileExtension._
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 import data.xml.Position.positions
+import gui.CombatState
 import gui.ModelSlot
 import gui.ShipModel
-import gui.CombatState
-import gui.CombatState._
-
 
 case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
     slotOptions: Option[String] )
@@ -42,7 +42,7 @@ object Ship extends XmlLoader[Ship]{
     facing <- moduleSlot \ 'facing \ text
     slotOptions = moduleSlot \ 'SlotOptions \ text
   } yield ShipModuleSlot(pos, module, 90.0f - facing.toFloat,
-      slotOptions.headOption.filter(_ != "NotApplicable"))
+      slotOptions.headOption.filter(_ =/= "NotApplicable"))
 
   private def mods( e: Elem ) : Seq[String] = for {
     modList <- e \ 'RequiredModList
@@ -73,9 +73,8 @@ object Ship extends XmlLoader[Ship]{
     savedDesigns ++ wip
   }
  
-  private def getTextNode( name: Symbol, text: Any ) = {
+  private def getTextNode( name: Symbol, text: Any ) =
     Elem(None, name.name, Attributes.empty, Map(), Group(Text(text.toString)))
-  }
   
   def getPosition( pos: Position ) : Node = {
     Elem(None, "Position", Attributes.empty, Map(), Group( getTextNode('X, pos.x), getTextNode('Y, pos.y)) )

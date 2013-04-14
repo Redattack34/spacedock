@@ -6,6 +6,15 @@ import java.io.InputStream
 import java.io.PushbackInputStream
 import java.net.URL
 
+import scalaz.Scalaz._
+
+import com.codecommit.antixml.Attributes
+import com.codecommit.antixml.Elem
+import com.codecommit.antixml.Group
+import com.codecommit.antixml.Text
+
+import scalaz._
+
 object XmlUtils {
 
   private def removeBOM(is: InputStream) : InputStream = {

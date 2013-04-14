@@ -1,21 +1,22 @@
 package gui
 
+import java.awt.event.MouseEvent
+import java.awt.event.MouseListener
+
+import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreePath
+import javax.swing.tree.TreeSelectionModel
+
 import scala.swing.BorderPanel
 import scala.swing.Component
 import scala.swing.ScrollPane
 import scala.swing.event.Event
+
 import data.general.DataModel
-import data.xml.ShipModule
-import javax.swing.JTree
-import javax.swing.event.TreeSelectionEvent
-import javax.swing.event.TreeSelectionListener
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.TreePath
-import javax.swing.tree.TreeSelectionModel
 import data.general.ReloadFromModel
-import javax.swing.tree.DefaultTreeModel
-import java.awt.event.MouseListener
-import java.awt.event.MouseEvent
+import data.xml.ShipModule
 
 class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
 

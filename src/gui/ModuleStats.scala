@@ -1,14 +1,14 @@
 package gui
 
 import java.awt.Color
-import scala.swing.Label
-import data.general.DataModel
-import scala.swing.Panel
-import scala.swing.BorderPanel
-import scala.swing.Alignment
+
 import scala.swing.BoxPanel
+import scala.swing.Label
 import scala.swing.Orientation
-import data.xml.ShipModule
+
+import scalaz.Scalaz._
+
+import data.general.DataModel
 
 class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
 
@@ -88,7 +88,7 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
         bonusRepair.text = "Repair Bonus: " + data
       }
 
-      showIf( mod.moduleType == "Shield", mod.shieldData
+      showIf( mod.moduleType === "Shield", mod.shieldData
            )( shieldSize, shieldStrength, shieldRecharge, shieldDelay ){ data =>
           shieldStrength.text = "Shield Strength: " + data.shieldPower
           shieldSize.text = "Shield Size:" + data.radius
@@ -96,14 +96,14 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
           shieldDelay.text = "Shield Recharge Delay: " + data.rechargeDelay
       }
 
-      showIf( mod.moduleType == "PowerPlant" || mod.moduleType == "FuelCell", mod.powerPlantData
+      showIf( mod.moduleType === "PowerPlant" || mod.moduleType === "FuelCell", mod.powerPlantData
            )( explodes, powerStorage ) { data =>
         power.text = "Power: " + data.powerFlowMax
         powerStorage.text = "Power Store: " + data.powerStoreMax
         explodes.visible = data.explodes
       }
 
-      showIf( mod.moduleType == "Engine", mod.engineData
+      showIf( mod.moduleType === "Engine", mod.engineData
            )( engineThrust, engineTurn, engineWarp ) { data =>
         engineThrust.text = "Thrust: " + data.thrust
         engineWarp.text = "Warp: " + data.warpThrust

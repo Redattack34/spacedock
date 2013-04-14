@@ -1,5 +1,7 @@
 package gui
 
+import javax.swing.UIManager
+
 import scala.swing.Component
 import scala.swing.MainFrame
 import scala.swing.MenuBar
@@ -7,12 +9,11 @@ import scala.swing.Orientation
 import scala.swing.ScrollPane
 import scala.swing.SimpleSwingApplication
 import scala.swing.SplitPane
-import data.general.DataModel
-import javax.swing.UIManager
 import scala.swing.Window
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.core.util.StatusPrinter
-import org.slf4j.LoggerFactory
+
+import scalaz.Scalaz._
+
+import data.general.DataModel
 
 object Spacedock extends SimpleSwingApplication {
 
@@ -20,7 +21,7 @@ object Spacedock extends SimpleSwingApplication {
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     for (info <- UIManager.getInstalledLookAndFeels( ))
     {
-      if ( "Nimbus" == info.getName( ) ) {
+      if ( "Nimbus" === info.getName( ) ) {
         UIManager.setLookAndFeel( info.getClassName( ) );
       }
     }

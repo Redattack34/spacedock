@@ -1,6 +1,12 @@
 package data.xml
 
-import com.codecommit.antixml._
+import com.codecommit.antixml.Attributes
+import com.codecommit.antixml.Elem
+import com.codecommit.antixml.Group
+import com.codecommit.antixml.Selector.symbolToSelector
+import com.codecommit.antixml.Text
+import com.codecommit.antixml.text
+import scalaz.Show
 
 case class Position(x: Int, y: Int)
 

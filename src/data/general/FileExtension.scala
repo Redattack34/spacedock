@@ -1,9 +1,8 @@
 package data.general
 
 import java.io.File
-import scala.collection._
 
-class FileExtension( val file: File,  val path: immutable.Seq[String] ) {
+class FileExtension( val file: File,  val path: Seq[String] ) {
   def /(str: String) : FileExtension = {
     new FileExtension( file, path :+ str)
   }

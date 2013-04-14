@@ -1,35 +1,40 @@
 package data.general
 
-import java.io.File
-import java.net.URL
-import java.util.concurrent.TimeUnit
-import com.google.common.base.Stopwatch
-import data.xml.Hull
-import data.xml.Localization.loadTokens
-import data.xml.Module
-import data.xml.Mod
-import data.xml.Ship
-import data.xml.ShipModule
-import data.xml.Weapon
-import data.xnb.XnbReader
-import gui.ShipModel
-import javax.swing.ImageIcon
-import javax.swing.JOptionPane
-import data.xml.Mod
-import data.general.FileExtension._
-import scala.swing.Publisher
-import scala.swing.event.Event
-import scala.swing.Reactor
-import gui.LoadMod
-import gui.ClearMods
-import gui.UnloadMod
-import data.xml.Technology
-import data.xml.Research
-import com.weiglewilczek.slf4s.Logging
+import java.awt.Image
+import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.awt.image.RescaleOp
-import java.awt.RenderingHints
-import java.awt.Image
+import java.io.File
+import java.net.URL
+
+import javax.swing.ImageIcon
+import javax.swing.JOptionPane
+
+import scala.Option.option2Iterable
+import scala.swing.Publisher
+import scala.swing.Reactor
+import scala.swing.event.Event
+
+import scalaz.Scalaz._
+
+import com.weiglewilczek.slf4s.Logging
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
+import data.xml.Hull
+import data.xml.Localization.loadTokens
+import data.xml.Mod
+import data.xml.Module
+import data.xml.Research
+import data.xml.Ship
+import data.xml.ShipModule
+import data.xml.Technology
+import data.xml.Weapon
+import data.xnb.XnbReader
+import gui.ClearMods
+import gui.LoadMod
+import gui.ShipModel
+import gui.UnloadMod
 
 class ModuleImage( val img: BufferedImage ) {
   lazy val highlight : BufferedImage = {
@@ -90,18 +95,12 @@ class DataModel extends Publisher with Reactor {
 
   val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
 
-  var _modData = Config.mods
+  var modData = Config.mods
                 .flatMap(mod => allMods.get(mod))
                 .map(mod => (mod, install / 'Mods / mod.dir))
                 .map{ case (mod, dir) => new ModData( mod.name, dir)}
-  def modData = _modData
-  def modData_=(data: Seq[ModData]) = {
-    _modData = data
-    allData = baseGame +: modData
-    publish(ReloadFromModel)
-  }
-
-  var allData = baseGame +: modData
+  
+  def allData = baseGame +: modData
 
   var customShipDesigns = showErrors(Ship.loadCustomShips(user)).map( ship => (ship.name, ship)).toMap
 
@@ -110,7 +109,7 @@ class DataModel extends Publisher with Reactor {
   def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
   def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
   def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
-  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _).filter(_._2.moduleType != "Dummy")
+  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _).filter(_._2.moduleType =/= "Dummy")
   def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
   def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
     .filter(_._2.requiredModsList.forall(loadedMods.contains))
@@ -122,8 +121,8 @@ class DataModel extends Publisher with Reactor {
   def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
 
   def ships(race: String, hull: String) = shipDesigns.values
-      .filter(_.race == race)
-      .filter(_.hull == hull)
+      .filter(_.race === race)
+      .filter(_.hull === hull)
 
   def hullForShip(s: Ship) = hullsByRace(s.race)(s.hull)
 
@@ -149,9 +148,9 @@ class DataModel extends Publisher with Reactor {
     ship
   }
 
-  def fighterDesigns : Array[String] =
-    shipDesigns.values.filter( _.role == "fighter").map(_.name)
-        .toSeq.sorted.toArray
+  def fighterDesigns : Seq[String] =
+    shipDesigns.values.filter( _.role === "fighter").map(_.name)
+        .toSeq.sorted
 
   def mods : Seq[Mod] = allMods.values.toSeq.sortBy(_.name)
   def loadedMods : Seq[String] = modData.map(_.name)
@@ -178,7 +177,7 @@ class DataModel extends Publisher with Reactor {
 
   reactions += {
     case LoadMod(mod) => modData = modData :+ new ModData(mod.name, install / 'Mods / mod.dir)
-    case UnloadMod(mod) => modData = modData.filter(_.name != mod.name)
+    case UnloadMod(mod) => modData = modData.filter(_.name =/= mod.name)
     case ClearMods => modData = Seq()
   }
 }
@@ -209,7 +208,7 @@ object DataModel extends Logging {
             "SpaceDock: Failed to Load Texture", JOptionPane.ERROR_MESSAGE)
         None
       }
-      case Right(im) => Some(new ModuleImage(im.asInstanceOf[BufferedImage]))
+      case Right(im) => new ModuleImage(im.asInstanceOf[BufferedImage]).some
     }
   }
 }

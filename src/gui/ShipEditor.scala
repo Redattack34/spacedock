@@ -6,30 +6,29 @@ import java.awt.Dimension
 import java.awt.Graphics2D
 import java.awt.Rectangle
 import java.awt.RenderingHints
+
+import javax.swing.JOptionPane
+
 import scala.swing.Component
-import scala.swing.Orientation
-import scala.swing.Scrollable
 import scala.swing.event.Event
+import scala.swing.event.Key
+import scala.swing.event.KeyReleased
+import scala.swing.event.MouseDragged
+import scala.swing.event.MouseEvent
 import scala.swing.event.MouseMoved
 import scala.swing.event.MousePressed
+
 import data.general.DataModel
 import data.general.Point
-import gui.MouseEventWrappers._
-import scala.swing.event.MouseReleased
-import scala.swing.event.MouseDragged
-import javax.swing.JOptionPane
-import data.xml.ShipModule
-import data.xml.Ship
-import data.xml.ShieldData
-import data.xml.HullModuleSlot
+import data.general.RangeOverlap.range2Overlap
 import data.general.ReloadFromModel
+import data.xml.HullModuleSlot
+import data.xml.ShieldData
+import data.xml.Ship
 import data.xml.ShipModule
-import scala.swing.event.MouseEvent
-import scala.swing.event.KeyTyped
-import scala.swing.event.KeyReleased
-import scala.swing.event.Key
-import scala.annotation.tailrec
-import data.general.RangeOverlap._
+import gui.MouseEventWrappers.click2wrapper
+import gui.MouseEventWrappers.event2wrapper
+import scalaz.Scalaz._
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -59,7 +58,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
   }
   case class PlacementMode(mod: ShipModule) extends EditorMode {
     override val isPlacement = true
-    override def module = Some(mod)
+    override def module = mod.some
   }
   case class FacingMode(mods: Set[(Point, ShipModule)]) extends EditorMode {
     override val isFacing = true
@@ -94,8 +93,8 @@ class ShipEditor(dataModel: DataModel) extends Component {
     if ( newModel == oldModel ) return
     _shipModel = newModel
     publish(ShipModelChanged(newModel))
-    if ( oldModel.width !=  newModel.width ||
-         oldModel.height != newModel.height ) resize
+    if ( oldModel.width =/=  newModel.width ||
+         oldModel.height =/= newModel.height ) resize
     else repaint
   }
 
@@ -180,8 +179,8 @@ class ShipEditor(dataModel: DataModel) extends Component {
       (ship, p, f) => ship.setFacing(p, f.toFloat) )
   }
 
-  def getName() = JOptionPane.showInputDialog(this.peer, "Name:",
-          "Save Ship", JOptionPane.QUESTION_MESSAGE)
+  def getName() = Option(JOptionPane.showInputDialog(this.peer, "Name:",
+          "Save Ship", JOptionPane.QUESTION_MESSAGE))
 
   def newReactions = Unit
   reactions += {
@@ -206,16 +205,16 @@ class ShipEditor(dataModel: DataModel) extends Component {
     case CombatStateSet(state) => this.shipModel = shipModel.withCombatState(state)
     case SaveShip => {
       val name = getName()
-      if ( name != null ) {
-        shipModel = shipModel.withName(name)
+      if ( name.isDefined ) {
+        shipModel = shipModel.withName(name.get)
         val saved = dataModel.save(shipModel)
         publish(ShipSaved(saved))
       }
     }
     case SaveAs(file) => {
       val name = getName()
-      if ( name != null ) {
-        shipModel = shipModel.withName(name)
+      if ( name.isDefined ) {
+        shipModel = shipModel.withName(name.get)
         val saved = dataModel.saveToFile(shipModel, file)
         publish(ShipSaved(saved))
       }
@@ -228,14 +227,14 @@ class ShipEditor(dataModel: DataModel) extends Component {
       state = state.copy( mouseOver = getMouseOver(loc) )
       if (  mode.isFacing ) {
         val FacingMode(mods) = mode
-        val filtered = mods.filter(_._2.moduleType == "Turret")
+        val filtered = mods.filter(_._2.moduleType === "Turret")
         val angleFunc =
           if ( e.isAltDown ) pointAwayFromMouse _
           else if ( e.isCtrlDown ) pointToMouse _
           else shareDirection
         shipModel = filtered.foldLeft(shipModel)(changeFacing(loc)(angleFunc) _)
       }
-      if ( mode.isPlacement && oldMouseOver != mouseOver ) {
+      if ( mode.isPlacement && oldMouseOver =/= mouseOver ) {
         leftClick(e)
       }
     }
@@ -249,7 +248,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
         val angle = keyToAngle(keyReleased.key)
 
-        val filtered = mods.filter(_._2.moduleType == "Turret")
+        val filtered = mods.filter(_._2.moduleType === "Turret")
         shipModel = filtered.foldLeft(shipModel)(changeFacing(null)(constantAngle(angle)) _)
       }
     }
@@ -290,10 +289,10 @@ class ShipEditor(dataModel: DataModel) extends Component {
                 !mod.hangarData.get.isTroopBay) {
           val selected = JOptionPane.showInputDialog(this.peer, "", "Select Fighter",
               JOptionPane.QUESTION_MESSAGE, null,
-              dataModel.fighterDesigns.asInstanceOf[Array[Object]], null)
-          if ( selected == null ) return
+              dataModel.fighterDesigns.toArray : Array[Object], null)
+          if ( selected eq null ) return
           else {
-            shipModel = mirrorChange( shipModel, mod.xSize, mouseOver, _.placeModule(_, mod, Some(selected.toString)))
+            shipModel = mirrorChange( shipModel, mod.xSize, mouseOver, _.placeModule(_, mod, selected.toString.some))
           }
         }
         else {
@@ -380,7 +379,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
     if ( mirror ) {
       val midpointLine = shipModel.midPoint + 10
-      if ( midpointLine != -1 ) {
+      if ( midpointLine =/= -1 ) {
         g2.setColor(Color.BLACK)
         g2.setStroke(new BasicStroke(1))
         g2.drawLine((midpointLine * zoom).toInt, 0, (midpointLine * zoom).toInt, this.size.height)
@@ -421,7 +420,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
     g2.fill(rect)
 
     val squareColor = if ( showEmpty > 0 && shipModel.moduleAt(p).isEmpty ) {
-                        if ( (showEmpty/5) % 2 == 0 ) Color.RED
+                        if ( (showEmpty/5) % 2 === 0 ) Color.RED
                         else Color.BLACK
                       }
                       else if ( shipModel.hasPower(p) ) Color.YELLOW

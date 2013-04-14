@@ -1,11 +1,15 @@
 package data.xml
 
+import java.io.File
+
+import scala.Option.option2Iterable
+
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
-import java.io.File
-import data.general.FileExtension._
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 
 case class Mod(name: String, desc: String, file: File) {
   def dir = file.getName().replace(".xml", "")

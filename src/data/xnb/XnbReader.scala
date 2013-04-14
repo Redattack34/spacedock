@@ -1,22 +1,26 @@
 package data.xnb
 
 import java.awt.Image
+import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ProcessBuilder
 import java.lang.String
+
+import javax.imageio.ImageIO
+
+import scala.Array.canBuildFrom
+
+import scalaz.Scalaz._
+
 import com.google.common.io.ByteStreams
+
 import ImageFormat.ImageFormat
 import InputStreamUtils.read7BitInt
 import InputStreamUtils.readInt
 import InputStreamUtils.readString
-import javax.imageio.ImageIO
-import javax.imageio.stream.ImageOutputStream
-import java.awt.image.BufferedImage
-import java.io.FileInputStream
-import com.google.common.primitives.UnsignedBytes
 
 object XnbReader {
 
@@ -53,7 +57,7 @@ object XnbReader {
     val magic2 = is.read
     val magic3 = is.read
 
-    if ( magic1 != 'X' || magic2 != 'N' || magic3 != 'B' )
+    if ( magic1 =/= 'X' || magic2 =/= 'N' || magic3 =/= 'B' )
       return Left(new IOException("Damaged or invalid XNB file"))
 
     val platform = is.read.toChar

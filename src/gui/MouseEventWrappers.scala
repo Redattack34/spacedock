@@ -1,7 +1,7 @@
 package gui
 
-import scala.swing.event.MouseClicked
 import javax.swing.SwingUtilities
+
 import scala.swing.event.MouseButtonEvent
 import scala.swing.event.MouseEvent
 

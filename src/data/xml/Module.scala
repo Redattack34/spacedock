@@ -1,13 +1,16 @@
 package data.xml
 
 import java.io.File
-import scala.Array.canBuildFrom
+
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
-import data.general.FileExtension._
-import gui.Restrictions._
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
+import gui.Restrictions.ModIOE
+import gui.Restrictions.ModuleRestrictions
+import gui.Restrictions.getModuleFromString
 
 case class ShieldData(shieldPower: Int, rechargeDelay: Float, rechargeRate: Float, radius: Int)
 

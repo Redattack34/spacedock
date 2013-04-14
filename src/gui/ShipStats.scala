@@ -1,11 +1,14 @@
 package gui
 
 import java.text.DecimalFormat
+
+import scala.Option.option2Iterable
+import scala.swing.Alignment
 import scala.swing.BoxPanel
 import scala.swing.Label
 import scala.swing.Orientation
+
 import data.general.DataModel
-import scala.swing.Alignment
 
 class ShipStats(dataModel: DataModel) extends BoxPanel(Orientation.Vertical) {
 

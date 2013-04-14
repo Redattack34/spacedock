@@ -1,23 +1,27 @@
 package gui
 
-import data.general.DataModel
-import scala.swing.RadioButton
-import data.xml.Ship
-import data.xml.Hull
-import javax.swing.JOptionPane
-import scala.swing.CheckMenuItem
-import scala.swing.event.Event
-import scala.swing.MenuItem
-import scala.swing.Menu
-import scala.swing.ButtonGroup
-import scala.swing.MenuBar
-import scala.swing.event.ButtonClicked
-import java.net.URL
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
-import data.general.ReloadFromModel
 import java.io.File
+import java.net.URL
 
+import javax.swing.JFileChooser
+import javax.swing.JOptionPane
+import javax.swing.filechooser.FileNameExtensionFilter
+
+import scala.swing.ButtonGroup
+import scala.swing.CheckMenuItem
+import scala.swing.Menu
+import scala.swing.MenuBar
+import scala.swing.MenuItem
+import scala.swing.RadioButton
+import scala.swing.event.ButtonClicked
+import scala.swing.event.Event
+
+import scalaz.Scalaz._
+
+import data.general.DataModel
+import data.general.ReloadFromModel
+import data.xml.Hull
+import data.xml.Ship
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
@@ -50,30 +54,23 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object SaveAsItem extends MenuItem("Save As")
   case object ExitItem extends MenuItem("Exit")
   case object LoadModsItem extends MenuItem("Load Mods")
+  
+  case class CombatStateButton( cs: CombatState ) extends RadioButton( cs.desc + "  " ) {
+    tooltip = data.token(cs.token)
+  }
 
   val fileMenu = new Menu("File")
   fileMenu.contents ++= Seq(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, SaveAsItem, LoadModsItem, ExitItem )
 
   listenTo(LoadShipFromFileItem, LoadShipFromUrlItem, SaveShipItem, SaveAsItem , LoadModsItem, ExitItem)
 
-  val attackRuns = new RadioButton("Attack Runs  ")
-  attackRuns.tooltip = data.token(200)
-
-  val artillery = new RadioButton("Artillery  ")
-  artillery.tooltip = data.token(201)
-
-  val holdPosition = new RadioButton("Hold Position  ")
-  holdPosition.tooltip = data.token(263)
-
-  val orbitPort = new RadioButton("Orbit Port  ")
-  orbitPort.tooltip = data.token(202)
-
-  val orbitStarboard = new RadioButton("Orbit Starboard  ")
-  orbitStarboard.tooltip = data.token(203)
-
-  val evade = new RadioButton("Evade")
-  evade.tooltip = data.token(205)
-
+  val attackRuns = CombatStateButton(AttackRuns)
+  val artillery = CombatStateButton(Artillery)
+  val holdPosition = CombatStateButton(HoldPosition)
+  val orbitPort = CombatStateButton(OrbitPort)
+  val orbitStarboard = CombatStateButton(OrbitStarboard)
+  val evade = CombatStateButton(Evade)
+  
   val group = new ButtonGroup( artillery, attackRuns, holdPosition,
       orbitPort, orbitStarboard, evade );
 
@@ -142,7 +139,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   }
 
   reactions += {
-    case ShipSaved(ship) => shipLoaded(Some(ship))
+    case ShipSaved(ship) => shipLoaded(ship.some)
     case ButtonClicked(HullMenuItem(hull)) => publish( HullSelected(hull) )
     case ButtonClicked(ShipMenuItem(ship, hull)) => {
       publish( ShipSelected(ship, hull) )
@@ -158,14 +155,14 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(LoadShipFromUrlItem) => {
       val urlString = JOptionPane.showInputDialog(this.peer.getParent(),
           "Enter URL:", "Load Ship From URL", JOptionPane.QUESTION_MESSAGE)
-      if (urlString != null) {
+      if (urlString =/= null) {
         val url = new URL( urlString )
         shipLoaded(data.loadShipFromUrl(url))
       }
     }
     case ButtonClicked(LoadShipFromFileItem) => {
       val accepted = chooser.showOpenDialog(this.peer.getParent())
-      if (accepted == JFileChooser.APPROVE_OPTION) {
+      if (accepted === JFileChooser.APPROVE_OPTION) {
         val file = chooser.getSelectedFile()
         val shipOpt = data.loadShipFromFile(file)
         shipLoaded(shipOpt)
@@ -174,7 +171,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(SaveShipItem) => publish(SaveShip)
     case ButtonClicked(SaveAsItem) => {
       val accepted = chooser.showSaveDialog(this.peer.getParent())
-      if (accepted == JFileChooser.APPROVE_OPTION) {
+      if (accepted === JFileChooser.APPROVE_OPTION) {
         val file = chooser.getSelectedFile()
         val withExtension = if ( !file.getName().endsWith(".xml") ) new File( file.getAbsolutePath() + ".xml" )
                             else file
@@ -189,12 +186,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(ShowEmptySlotsItem) => publish( ShowEmptySlots )
     case ButtonClicked(FillEmptySlotsItem) => publish( FillEmptySlots )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
-    case ButtonClicked(rb) if rb == attackRuns => publish( CombatStateSet(AttackRuns))
-    case ButtonClicked(rb) if rb == artillery => publish( CombatStateSet(Artillery))
-    case ButtonClicked(rb) if rb == holdPosition => publish( CombatStateSet(HoldPosition))
-    case ButtonClicked(rb) if rb == orbitPort => publish( CombatStateSet(OrbitPort))
-    case ButtonClicked(rb) if rb == orbitStarboard => publish( CombatStateSet(OrbitStarboard))
-    case ButtonClicked(rb) if rb == evade => publish( CombatStateSet(Evade))
+    case ButtonClicked(CombatStateButton(cs)) => publish( CombatStateSet(cs))
     case ReloadFromModel => {
       shipsMenu.contents.clear
       loadMenus

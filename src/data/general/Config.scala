@@ -2,9 +2,15 @@ package data.general
 
 import java.io.File
 import java.io.PrintStream
-import scala.io.Source
+
 import javax.swing.JFileChooser
-import Iterator._
+
+import scala.Iterator.continually
+import scala.collection.TraversableOnce.flattenTraversableOnce
+import scala.io.Source
+
+import scalaz.Scalaz._
+
 import com.weiglewilczek.slf4s.Logging
 
 object Config extends Logging {
@@ -36,7 +42,7 @@ object Config extends Logging {
   }
 
   def removeMod( name: String ) = {
-    mods = mods.filterNot(_ == name)
+    mods = mods.filterNot(_ === name)
     write
   }
 
@@ -66,7 +72,7 @@ object Config extends Logging {
   private def isValidInstallDir( f: File ) : Boolean = {
 
     def logFailed(reason: String) = logger.warn( "Invalid install dir (" + f + "): " + reason )
-    if (f == null) { logFailed(""); return false }
+    if (f eq null) { logFailed(""); return false }
     if (!f.exists()) { logFailed("Doesn't Exist"); return false}
     if (!f.list.contains("Content")) { logFailed("Doesn't contain Content folder"); return false}
     if (!f.list.contains("Mods")) { logFailed("Doesn't contain Mods folder"); return false}
@@ -75,7 +81,7 @@ object Config extends Logging {
 
   private def isValidUserDir( f: File ) : Boolean = {
     def logFailed(reason: String) = logger.warn( "Invalid user dir (" + f + "): " + reason )
-    if (f == null) { logFailed(""); return false }
+    if (f eq null) { logFailed(""); return false }
     if (!f.exists()) { logFailed("Doesn't Exist"); return false}
     if (!f.list.contains("Saved Designs")) { logFailed("Doesn't contain Saved Designs folder"); return false}
     if (!f.list.contains("WIP")) { logFailed("Doesn't contain WIP folder"); return false}
@@ -94,11 +100,11 @@ object Config extends Logging {
   private def showChooser( prompt: String ) : Iterator[File] = {
     chooser.setDialogTitle(prompt)
     val accept = chooser.showOpenDialog(null)
-    if ( accept == JFileChooser.APPROVE_OPTION ) {
+    if ( accept === JFileChooser.APPROVE_OPTION ) {
       val selected = chooser.getSelectedFile
       Iterator( selected, selected.getParentFile ) ++ selected.listFiles
     }
-    else if ( accept == JFileChooser.CANCEL_OPTION ) {
+    else if ( accept === JFileChooser.CANCEL_OPTION ) {
       System.exit(0)
       Iterator.empty
     }

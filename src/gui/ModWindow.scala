@@ -1,5 +1,10 @@
 package gui
 
+import java.awt.Dimension
+
+import javax.swing.BorderFactory
+import javax.swing.border.BevelBorder
+
 import scala.swing.Alignment
 import scala.swing.BorderPanel
 import scala.swing.BoxPanel
@@ -10,17 +15,12 @@ import scala.swing.Label
 import scala.swing.Orientation
 import scala.swing.ScrollPane
 import scala.swing.Swing.VStrut
-import data.general.DataModel
-import data.xml.Mod
-import javax.swing.BorderFactory
-import javax.swing.border.BevelBorder
-import scala.swing.Component
 import scala.swing.event.ButtonClicked
 import scala.swing.event.Event
-import java.awt.Dimension
-import scala.swing.ScrollBar
-import data.general.Config
 
+import data.general.Config
+import data.general.DataModel
+import data.xml.Mod
 
 case class LoadMod(mod : Mod) extends Event
 case class UnloadMod(mod : Mod) extends Event

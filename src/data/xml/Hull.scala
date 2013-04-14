@@ -1,16 +1,18 @@
 package data.xml
 
 import java.io.File
-import data.general.FileExtension._
+
 import scala.Array.canBuildFrom
-import scala.Array.fallbackCanBuildFrom
+
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 import data.xml.Position.positions
-import scala.xml.factory.XMLLoader
-import gui.Restrictions._
+import gui.Restrictions.SlotRestrictions
+import gui.Restrictions.getSlotFromString
 
 case class HullModuleSlot( pos: Position, restrictions: SlotRestrictions, slotOptions: Option[String] )
 case class ThrusterZone(pos: Position, scale: Int)

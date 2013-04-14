@@ -1,11 +1,13 @@
 package data.xml
 
 import java.io.File
-import data.general.FileExtension._
+
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Selector.symbolToSelector
-import com.codecommit.antixml.XML
 import com.codecommit.antixml.text
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 
 
 case class Technology( nameID: Int, modules: Seq[String], hulls: Seq[String] )

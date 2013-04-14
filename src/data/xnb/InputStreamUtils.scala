@@ -2,6 +2,8 @@ package data.xnb
 
 import java.io.InputStream
 
+import scalaz.Scalaz._
+
 import com.google.common.base.Charsets
 
 object InputStreamUtils {
@@ -30,7 +32,7 @@ object InputStreamUtils {
       result |= (value & 0x7F) << bitsRead;
       bitsRead += 7;
     }
-    while( (value & 0x80) != 0 )
+    while( (value & 0x80) =/= 0 )
 
     value
   }
