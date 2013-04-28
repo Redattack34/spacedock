@@ -207,16 +207,18 @@ class ShipEditor(dataModel: DataModel) extends Component {
       val name = getName()
       if ( name.isDefined ) {
         shipModel = shipModel.withName(name.get)
-        val saved = dataModel.save(shipModel)
-        publish(ShipSaved(saved))
+        dataModel.save(shipModel).foreach{ saved => 
+          publish(ShipSaved(saved))
+        }
       }
     }
     case SaveAs(file) => {
       val name = getName()
       if ( name.isDefined ) {
         shipModel = shipModel.withName(name.get)
-        val saved = dataModel.saveToFile(shipModel, file)
-        publish(ShipSaved(saved))
+        dataModel.saveToFile(shipModel, file).foreach{ saved => 
+          publish(ShipSaved(saved))
+        }
       }
     }
 

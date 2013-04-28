@@ -163,15 +163,19 @@ class DataModel extends Publisher with Reactor {
   def techForHull( race: String, hull: String ) : Option[Technology] =
     techsByHull.get( race + "/" + hull )
 
-  def save( ship: ShipModel ) : Ship = {
+  def save( ship: ShipModel ) : Option[Ship] = {
     val saved = Ship.saveShip(ship, user)
-    customShipDesigns += (saved.name -> saved)
+    saved.foreach{ saved =>
+      customShipDesigns += (saved.name -> saved)
+    }
     saved
   }
 
-  def saveToFile( ship: ShipModel, file: File ) : Ship = {
+  def saveToFile( ship: ShipModel, file: File ) : Option[Ship] = {
     val saved = Ship.saveShipToFile(ship, file)
-    customShipDesigns += (saved.name -> saved)
+    saved.foreach{ saved =>
+      customShipDesigns += (saved.name -> saved)
+    }
     saved
   }
 

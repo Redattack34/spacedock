@@ -4,11 +4,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
-
 import scala.xml.PrettyPrinter
-
 import scalaz.Scalaz._
-
 import com.codecommit.antixml.Attributes
 import com.codecommit.antixml.Elem
 import com.codecommit.antixml.Group
@@ -18,13 +15,13 @@ import com.codecommit.antixml.Text
 import com.codecommit.antixml.stringTupleToQNameTuple
 import com.codecommit.antixml.text
 import com.google.common.base.Charsets
-
 import data.general.FileExtension.extension2File
 import data.general.FileExtension.file2Extension
 import data.xml.Position.positions
 import gui.CombatState
 import gui.ModelSlot
 import gui.ShipModel
+import javax.swing.JOptionPane
 
 case class ShipModuleSlot( pos: Position, installed: String, facing: Float,
     slotOptions: Option[String] )
@@ -61,11 +58,8 @@ object Ship extends XmlLoader[Ship]{
     split = hull.split('/')
     race = split(0)
     hullId = split(1)
-  } yield {
-    println(combatState)
-    Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
+  } yield Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
         boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
-  }
 
   def directory(base: File) = base / 'StarterShips
   
@@ -146,14 +140,23 @@ object Ship extends XmlLoader[Ship]{
         ))
   } 
   
-  def saveShip( ship: ShipModel, user: File ) : Ship = {
+  def saveShip( ship: ShipModel, user: File ) : Option[Ship] = {
     val dir = if ( ship.hasEmptySlots || !ship.hasCommandModule) "WIP"
               else "Saved Designs"
     val file = user / dir / (ship.ship.name + ".xml")
+    
+    if ( file.exists ) {
+      val selected = JOptionPane.showConfirmDialog(null, "This ship already exists. Overwrite?",
+        "Spacedock: Confirm Overwrite", JOptionPane.YES_NO_OPTION);
+      if ( selected =/= JOptionPane.YES_OPTION ) {
+        return none
+      }
+    }
+    
     saveShipToFile( ship, file )
   }
   
-  def saveShipToFile( ship: ShipModel, file: File ) : Ship = {
+  def saveShipToFile( ship: ShipModel, file: File ) : Option[Ship] = {
     val xml = shipToXml(ship)
     val scalaXml = scala.xml.XML.loadString(xml.toString)
     val printer = new PrettyPrinter(200, 2)
@@ -166,6 +169,6 @@ object Ship extends XmlLoader[Ship]{
     writer.print(sb)
     writer.close
     
-    loadFromFile(file).get
+    loadFromFile(file).get.some
   }
 }

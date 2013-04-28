@@ -65,7 +65,7 @@ object XnbReader {
     val flag = is.read.toByte
     val size = readInt(is)
     val readerCount = read7BitInt(is)
-    var readers = Seq[ReaderType]()
+    var readers = Vector[ReaderType]()
 
     for( i <- 0 until readerCount ) {
       val name = readString(is)

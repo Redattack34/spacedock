@@ -34,7 +34,7 @@ object InputStreamUtils {
     }
     while( (value & 0x80) =/= 0 )
 
-    value
+    result
   }
 
   def readShort(is: InputStream) : Short = {
