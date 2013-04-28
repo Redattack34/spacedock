@@ -61,8 +61,11 @@ object Ship extends XmlLoader[Ship]{
     split = hull.split('/')
     race = split(0)
     hullId = split(1)
-  } yield Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
-      boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
+  } yield {
+    println(combatState)
+    Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
+        boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
+  }
 
   def directory(base: File) = base / 'StarterShips
   
@@ -94,7 +97,7 @@ object Ship extends XmlLoader[Ship]{
         getTextNode('HangarshipGuid, "00000000-0000-0000-0000-000000000000"),
         getTextNode('Health, 0),
         getTextNode('Shield_Power, 0),
-        getTextNode('facing, slot.facing - 90.0),
+        getTextNode('facing, (- slot.facing + 90.0)),
         getTextNode('Restrictions, slot.hullSlot.restrictions.str)
     ))
     
