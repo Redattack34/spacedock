@@ -2,11 +2,9 @@ package gui
 
 import java.io.File
 import java.net.URL
-
 import javax.swing.JFileChooser
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
-
 import scala.swing.ButtonGroup
 import scala.swing.CheckMenuItem
 import scala.swing.Menu
@@ -15,13 +13,12 @@ import scala.swing.MenuItem
 import scala.swing.RadioButton
 import scala.swing.event.ButtonClicked
 import scala.swing.event.Event
-
 import scalaz.Scalaz._
-
 import data.general.DataModel
 import data.general.ReloadFromModel
 import data.xml.Hull
 import data.xml.Ship
+import javax.swing.JMenuItem
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
@@ -132,6 +129,10 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       val hull = data.hullForShip(ship)
       val menuItem = new ShipMenuItem(ship, hull)
       val menu = hullMenuItems(hull.name)
+      val index = menu.peer.getMenuComponents.findIndexOf{ _.asInstanceOf[JMenuItem].getText === ship.name }
+      if ( index =/= -1 ) {
+        menu.peer.remove(index)
+      }
       menu.contents.insert(menu.peer.getMenuComponentCount() - 1, menuItem)
       listenTo(menuItem)
       publish(ShipSelected(ship, hull))
