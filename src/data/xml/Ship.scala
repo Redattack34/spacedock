@@ -59,7 +59,7 @@ object Ship extends XmlLoader[Ship]{
     race = split(0)
     hullId = split(1)
   } yield Ship( name, role, combatState.headOption.flatMap( CombatState.getFromString(_) ),
-        boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
+            boardingDefense.headOption.map(_.toInt), race, hullId, modules, requiredMods)
 
   def directory(base: File) = base / 'StarterShips
   
@@ -128,7 +128,7 @@ object Ship extends XmlLoader[Ship]{
           getTextNode('IsShipyard, false),
           getTextNode('IsOrbitalDefense, false),
           getTextNode('IconPath, hull.iconPath),
-          getTextNode('CombatState, combatState),
+          getTextNode('CombatState, combatState.str),
           getTextNode('MechanicalBoardingDefense, 0),
           getTextNode('Hull, ship.race + "/" + ship.hull),
           getTextNode('Role, hull.role),

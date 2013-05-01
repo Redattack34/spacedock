@@ -129,7 +129,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       val hull = data.hullForShip(ship)
       val menuItem = new ShipMenuItem(ship, hull)
       val menu = hullMenuItems(hull.name)
-      val index = menu.peer.getMenuComponents.findIndexOf{ _.asInstanceOf[JMenuItem].getText === ship.name }
+      val index = menu.peer.getMenuComponents.indexWhere{ _.asInstanceOf[JMenuItem].getText === ship.name }
       if ( index =/= -1 ) {
         menu.peer.remove(index)
       }
