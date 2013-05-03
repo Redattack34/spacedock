@@ -133,7 +133,7 @@ class DataModel extends Publisher with Reactor {
 
   def token(id: Int) = tokens(id)
 
-  def weapon(weaponId: String) = weapons.get(weaponId).orElse(weapons.get(weaponId.replace("Dual", "").trim)).get
+  def weapon(weaponId: String) = weapons(weaponId)
   def weaponTypes = weapons.values.map(_.weaponType).toSet
 
   def module( moduleId: String ) = modules(moduleId)

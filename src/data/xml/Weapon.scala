@@ -18,7 +18,6 @@ case class Weapon( name: String, weaponType: String, range: Int,
 object Weapon extends XmlLoader[Weapon]{
 
   def load(f: Option[File], e : Elem) : Seq[Weapon] = for {
-    name <- e \ 'UID \ text
     weaponType <- e \ 'WeaponType \ text
     range <- e \ 'Range \ text
     fireDelay <- e \ 'fireDelay \ text
@@ -29,7 +28,7 @@ object Weapon extends XmlLoader[Weapon]{
     beamPower = e \ 'BeamPowerCostPerSecond \ text
     ordnance = e \ 'OrdnanceRequiredToFire \ text
     shotPower = e \ 'PowerRequiredToFire \ text
-  } yield Weapon( name, weaponType, range.toInt, fireDelay.toFloat,
+  } yield Weapon( f.get.getName.replace(".xml", ""), weaponType, range.toInt, fireDelay.toFloat,
       projectiles.headOption.map(_.toInt),
       bulletSpeed.headOption.map(_.toInt),
       beamPower.headOption.map(_.toInt),
