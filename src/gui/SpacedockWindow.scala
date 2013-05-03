@@ -1,7 +1,6 @@
 package gui
 
 import javax.swing.UIManager
-
 import scala.swing.Component
 import scala.swing.MainFrame
 import scala.swing.MenuBar
@@ -10,14 +9,14 @@ import scala.swing.ScrollPane
 import scala.swing.SimpleSwingApplication
 import scala.swing.SplitPane
 import scala.swing.Window
-
 import scalaz.Scalaz._
-
 import data.general.DataModel
+import util.ExceptionHandler
 
 object Spacedock extends SimpleSwingApplication {
 
   try {
+    new ExceptionHandler().installExceptionHandler();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     for (info <- UIManager.getInstalledLookAndFeels( ))
     {
