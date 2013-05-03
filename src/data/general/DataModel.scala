@@ -95,10 +95,15 @@ class DataModel extends Publisher with Reactor {
 
   val allMods : Map[String, Mod] = showErrors(Mod.loadAll(install)).map(mod => (mod.name, mod)).toMap
 
-  var modData = Config.mods
+  var _modData = Config.mods
                 .flatMap(mod => allMods.get(mod))
                 .map(mod => (mod, install / 'Mods / mod.dir))
                 .map{ case (mod, dir) => new ModData( mod.name, dir)}
+  def modData = _modData
+  def modData_=(data: Seq[ModData]) = {
+    _modData = data
+    publish(ReloadFromModel)
+  }
   
   def allData = baseGame +: modData
 
