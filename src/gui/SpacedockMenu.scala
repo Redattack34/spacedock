@@ -119,14 +119,17 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       ShowEmptySlotsItem, FillEmptySlotsItem, attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
 
-  def shipLoaded(shipOpt: Option[Ship]) = {
+  def shipLoaded(shipOpt: Option[Ship]) : Unit = {
     if ( shipOpt.isEmpty ) {
       JOptionPane.showMessageDialog(this.peer.getParent(),
           "Failed to Load Ship", "Failed to Load Ship", JOptionPane.ERROR_MESSAGE)
     }
     else {
       val ship = shipOpt.get
-      val hull = data.hullForShip(ship)
+      val hullOpt = data.hullForShip(ship)
+      if ( hullOpt.isEmpty ) { return } //Something very strange has occurred.
+      val hull = hullOpt.get
+      
       val menuItem = new ShipMenuItem(ship, hull)
       val menu = hullMenuItems(hull.name)
       val index = menu.peer.getMenuComponents.indexWhere{ _.asInstanceOf[JMenuItem].getText === ship.name }

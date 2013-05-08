@@ -6,19 +6,14 @@ import java.awt.image.BufferedImage
 import java.awt.image.RescaleOp
 import java.io.File
 import java.net.URL
-
 import javax.swing.ImageIcon
 import javax.swing.JOptionPane
-
 import scala.Option.option2Iterable
 import scala.swing.Publisher
 import scala.swing.Reactor
 import scala.swing.event.Event
-
 import scalaz.Scalaz._
-
 import com.weiglewilczek.slf4s.Logging
-
 import data.general.FileExtension.extension2File
 import data.general.FileExtension.file2Extension
 import data.xml.Hull
@@ -35,6 +30,7 @@ import gui.ClearMods
 import gui.LoadMod
 import gui.ShipModel
 import gui.UnloadMod
+import scala.collection.immutable.TreeSet
 
 class ModuleImage( val img: BufferedImage ) {
   lazy val highlight : BufferedImage = {
@@ -84,7 +80,7 @@ class ModData(val name: String, val dir: File) extends Logging {
 
 case object ReloadFromModel extends Event
 
-class DataModel extends Publisher with Reactor {
+class DataModel extends Publisher with Reactor with Logging {
   import DataModel._
 
   private val install = Config.install
@@ -121,23 +117,28 @@ class DataModel extends Publisher with Reactor {
   def techsByMod   = allData.map(_.techsByMod  ).reduceLeft(_ ++ _)
   def techsByHull  = allData.map(_.techsByHull ).reduceLeft(_ ++ _)
 
-  def races = hullsByRace.keys.toSeq.sorted
+  def races : Set[String] = TreeSet( hullsByRace.keys.toSeq:_* )
 
-  def hulls(race: String) = hullsByRace(race).values.toSeq.sortBy(_.name)
+  def hulls(race: String) : Set[Hull] = TreeSet( hullsByRace(race).values.toSeq:_* )( Ordering.by( _.name ) )
 
-  def ships(race: String, hull: String) = shipDesigns.values
+  def ships(race: String, hull: String) : Seq[Ship] = shipDesigns.values
       .filter(_.race === race)
       .filter(_.hull === hull)
+      .toSeq
 
-  def hullForShip(s: Ship) = hullsByRace(s.race)(s.hull)
+  def hullForShip(s: Ship) : Option[Hull] = 
+    hullsByRace.get(s.race).flatMap(_.get(s.hull))
 
-  def token(id: Int) = tokens(id)
+  def token(id: Int) : String = tokens.get(id).getOrElse {
+    logger.error("Request for unknown localization token: " + id )
+    "Invalid Token: " + id
+  }
 
-  def weapon(weaponId: String) = weapons(weaponId)
-  def weaponTypes = weapons.values.map(_.weaponType).toSet
+  def weapon(weaponId: String) : Option[Weapon] = weapons.get(weaponId)
+  def weaponTypes : Set[String] = weapons.values.map(_.weaponType).toSet
 
-  def module( moduleId: String ) = modules(moduleId)
-  def shipModules = modules.values
+  def module( moduleId: String ) : Option[ShipModule] = modules.get(moduleId)
+  def shipModules : Seq[ShipModule] = modules.values.toSeq
 
   def moduleImage( mod: ShipModule) = moduleImages(mod.iconTexturePath)
 

@@ -66,9 +66,10 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
 
   private def assignAsWeapon( mod: ShipModule ) : Unit = {
     val weaponType = mod.weaponData.get.weaponType
-    val trimmedWeaponType = weaponType.replaceFirst("Dual", "")
-    val weapon = model.weapon(trimmedWeaponType)
-    weaponTypeNodes(weapon.weaponType).add(toNode(mod))
+    val weapon = model.weapon(weaponType)
+    weapon.foreach { weap =>
+      weaponTypeNodes(weap.weaponType).add(toNode(mod))
+    }
   }
 
   private def assignAsModule( mod: ShipModule ) : Unit =
@@ -89,7 +90,7 @@ class ModuleList( model: DataModel ) extends BorderPanel with MouseListener {
     .toMap
     moduleTypeNodes.foreach( (addCategory _).tupled)
 
-    shipModules.toSeq.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
+    shipModules.sortBy( mod => token(mod.nameIndex) ).foreach(assign(_))
   }
   loadModules
 

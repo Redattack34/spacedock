@@ -32,7 +32,7 @@ object ShipModel {
     val modelSlots = hullSlots.mapValues{ slot =>
       val shipSlot = shipModules.get(slot.pos)
       val module = shipSlot.map(_.installed) match {
-        case Some(x) if x =/= "Dummy" => dataModel.module(x)
+        case Some(x) if x =/= "Dummy" => dataModel.module(x).getOrElse(dummy)
         case _ => dummy
       }
 
@@ -194,7 +194,7 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
     val newModel = slots.filter(notDummy)
        .filter( t => allModules.contains( t._2.module.uid ) )
        .foldLeft(ShipModel(data, hull))( (acc, slot) =>
-         acc.placeModule(slot._1, data.module(slot._2.module.uid))
+         acc.placeModule(slot._1, data.module(slot._2.module.uid).get)
        )
     newModel.copy( ship = ship.copy( requiredModsList = data.loadedMods))
   }

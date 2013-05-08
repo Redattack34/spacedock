@@ -129,7 +129,7 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
         cargoCapacity.text = "Cargo Capacity: " + cap
       }
 
-      showIf(mod.weaponData.map(weap => weapon(weap.weaponType))
+      showIf(mod.weaponData.flatMap(weap => weapon(weap.weaponType))
            )( weaponRange, weaponFireDelay ) { stat =>
 
            showIf( stat.projectileCount )( weaponProjectileCount ) { data =>
