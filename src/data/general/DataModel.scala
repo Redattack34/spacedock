@@ -49,14 +49,14 @@ class ModData(val name: String, val dir: File) extends Logging {
 
   logger.info("Loading " + name + " from " + dir.getAbsolutePath)
 
-  private val englishFile = dir / 'Localization / "English.xml"
-
   val hullsByRace : Map[String, Map[String, Hull]] = {
     val loadedHulls = showErrors( Hull.loadAll(dir) )
     loadedHulls.map(hull => (hull.name, hull)).toMap.groupBy(_._2.race)
   }
 
-  val tokens : Map[Int, String] = loadTokens(englishFile)
+  val tokens : Map[Int, String] = loadTokens(dir, Config.language)
+  lazy val englishTokens : Map[Int, String] = if ( Config.language =/= "English" ) loadTokens(dir, "English")
+  		                                      else tokens  
   val weapons : Map[String, Weapon] = showErrors(Weapon.loadAll(dir)).map( weap => (weap.name, weap)).toMap
   val modules : Map[String, ShipModule] = showErrors(Module.loadAll(dir)).map( mod => (mod.uid, mod)).toMap
   val moduleImages : Map[String, ModuleImage] = loadModuleTextures
@@ -107,15 +107,16 @@ class DataModel extends Publisher with Reactor with Logging {
 
   val lightningBolt : Image = loadTexture( install / 'Content / 'Textures / 'UI / "lightningBolt.xnb" ).get.img
 
-  def hullsByRace  = allData.map(_.hullsByRace ).reduceLeft(_ ++ _)
-  def tokens       = allData.map(_.tokens      ).reduceLeft(_ ++ _)
-  def weapons      = allData.map(_.weapons     ).reduceLeft(_ ++ _)
-  def modules      = allData.map(_.modules     ).reduceLeft(_ ++ _).filter(_._2.moduleType =/= "Dummy")
-  def moduleImages = allData.map(_.moduleImages).reduceLeft(_ ++ _)
-  def shipDesigns  = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
+  def hullsByRace   = allData.map(_.hullsByRace  ).reduceLeft(_ ++ _)
+  def tokens        = allData.map(_.tokens       ).reduceLeft(_ ++ _)
+  def englishTokens = allData.map(_.englishTokens).reduceLeft(_ ++ _)
+  def weapons       = allData.map(_.weapons      ).reduceLeft(_ ++ _)
+  def modules       = allData.map(_.modules      ).reduceLeft(_ ++ _).filter(_._2.moduleType =/= "Dummy")
+  def moduleImages  = allData.map(_.moduleImages ).reduceLeft(_ ++ _)
+  def shipDesigns   = (allData.map(_.shipDesigns ).reduceLeft(_ ++ _) ++ customShipDesigns)
     .filter(_._2.requiredModsList.forall(loadedMods.contains))
-  def techsByMod   = allData.map(_.techsByMod  ).reduceLeft(_ ++ _)
-  def techsByHull  = allData.map(_.techsByHull ).reduceLeft(_ ++ _)
+  def techsByMod    = allData.map(_.techsByMod   ).reduceLeft(_ ++ _)
+  def techsByHull   = allData.map(_.techsByHull  ).reduceLeft(_ ++ _)
 
   def races : Set[String] = TreeSet( hullsByRace.keys.toSeq:_* )
 
@@ -129,7 +130,7 @@ class DataModel extends Publisher with Reactor with Logging {
   def hullForShip(s: Ship) : Option[Hull] = 
     hullsByRace.get(s.race).flatMap(_.get(s.hull))
 
-  def token(id: Int) : String = tokens.get(id).getOrElse {
+  def token(id: Int) : String = tokens.get(id).orElse(englishTokens.get(id)).getOrElse {
     logger.error("Request for unknown localization token: " + id )
     "Invalid Token: " + id
   }
