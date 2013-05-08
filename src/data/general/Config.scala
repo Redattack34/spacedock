@@ -2,15 +2,11 @@ package data.general
 
 import java.io.File
 import java.io.PrintStream
-
 import javax.swing.JFileChooser
-
 import scala.Iterator.continually
 import scala.collection.TraversableOnce.flattenTraversableOnce
 import scala.io.Source
-
 import scalaz.Scalaz._
-
 import com.weiglewilczek.slf4s.Logging
 
 object Config extends Logging {
@@ -61,12 +57,30 @@ object Config extends Logging {
   else {
     logger.info("Loading from config file...")
     val source = Source.fromFile(config)
-    val lines = source.getLines
-    this.install = new File(lines.next)
-    this.user = new File(lines.next)
-    this.mods = lines.toSeq
+    this.install = getInstallDirFromFile(source)
+    this.user = getUserDirFromFile(source)
+    this.mods = getModsFromFile(source)
     logger.info("Install Directory: " + install.getAbsolutePath())
     logger.info("User Directory: " + user.getAbsolutePath())
+    write
+  }
+  
+  private def getInstallDirFromFile( s: Source ) : File = {
+    s.getLines.find(_.startsWith("Install:")) match {
+      case Some(line) => new File( line.replaceFirst("Install:", "").trim )
+      case None => installDirs.find(isValidInstallDir).get
+    }
+  }
+  
+  private def getUserDirFromFile( s: Source ) : File = {
+    s.getLines.find(_.startsWith("User:")) match {
+      case Some(line) => new File( line.replaceFirst("User:", "").trim )
+      case None => userDirs.find(isValidUserDir).get
+    }
+  }
+  
+  private def getModsFromFile( s: Source ) : Seq[String] = {
+    s.getLines.filter(_.startsWith("Mod:")).map(_.replaceFirst("Mod:", "").trim).toSeq
   }
 
   private def isValidInstallDir( f: File ) : Boolean = {
@@ -117,9 +131,9 @@ object Config extends Logging {
     val config = new File("config")
     if ( !config.exists() ) config.createNewFile
     val writer = new PrintStream( config )
-    writer.println(install)
-    writer.println(user)
-    mods.foreach(writer.println)
+    writer.println("Install:" + install)
+    writer.println("User:" + user)
+    mods.foreach(str => writer.println("Mod:" + str))
     writer.close
   }
 }
