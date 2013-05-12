@@ -12,6 +12,8 @@ import scala.swing.Window
 import scalaz.Scalaz._
 import data.general.DataModel
 import util.ExceptionHandler
+import scala.swing.Panel
+import scala.swing.GridBagPanel
 
 object Spacedock extends SimpleSwingApplication {
 
@@ -60,32 +62,40 @@ object Spacedock extends SimpleSwingApplication {
 
   dataModel.listenTo(modWindow)
 
-  val toolPaneBottom = new SplitPane {
-    topComponent = moduleStats
+  val toolPaneLeft = new SplitPane {
+    topComponent = new GridBagPanel
     bottomComponent = shipStats
     oneTouchExpandable = true
     resizeWeight = 0.5
   }
 
-  val toolPaneTop = new SplitPane {
+  val toolPaneRight = new SplitPane {
     oneTouchExpandable = true
-    resizeWeight = 0.0
+    resizeWeight = 0.25
     topComponent = modules
-    bottomComponent = toolPaneBottom
+    bottomComponent = moduleStats
   }
 
-  val mainSplit = new SplitPane {
+  val rightSplit = new SplitPane {
     orientation = Orientation.Vertical
     resizeWeight = 0.8
     oneTouchExpandable = true
     leftComponent = editorScroll
-    rightComponent = toolPaneTop
+    rightComponent = toolPaneRight
+  }
+
+  val leftSplit = new SplitPane {
+    orientation = Orientation.Vertical
+    resizeWeight = 0.2
+    oneTouchExpandable = true
+    leftComponent = toolPaneLeft
+    rightComponent = rightSplit
   }
 
   val top = new MainFrame {
     title = "Spacedock"
     menuBar = sdMenuBar
-    contents = mainSplit
+    contents = leftSplit
     maximize
   }
 
