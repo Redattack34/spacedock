@@ -32,7 +32,7 @@ case class ShipModule(
     
     //Game stats
     cost: Float, mass: Float, health: Int, powerDraw: Float, bonusRepair: Option[Int],
-    ordnanceCapacity: Option[Int], cargoCapacity: Option[Int],
+    ordnanceCapacity: Option[Int], ordnanceAddedPerSecond: Option[Double], cargoCapacity: Option[Int],
     
     shieldData: Option[ShieldData],
     powerPlantData: Option[PowerPlantData],
@@ -94,6 +94,7 @@ object Module extends XmlLoader[ShipModule] {
       powerDraw = e \ 'PowerDraw \ text
       bonusRepair = e \ 'BonusRepairRate \ text
       ordnanceCapacity = e \ 'OrdinanceCapacity \ text
+      ordnanceAddedPerSecond = e \ 'OrdnanceAddedPerSecond \ text
       cargoCapacity = e \ 'Cargo_Capacity \ text
 
       shieldData = shields(e)
@@ -109,6 +110,7 @@ object Module extends XmlLoader[ShipModule] {
         powerDraw.headOption.map(_.toFloat).getOrElse(0.0f),
         bonusRepair.headOption.map(_.toInt),
         ordnanceCapacity.headOption.map(_.toInt),
+        ordnanceAddedPerSecond.headOption.map(_.toDouble),
         cargoCapacity.headOption.map(_.toInt),
         shieldData.headOption, powerPlantData.headOption,
         weaponData.headOption, engineData.headOption, hangarData.headOption )
@@ -116,5 +118,5 @@ object Module extends XmlLoader[ShipModule] {
   def directory(base: File) = base / 'ShipModules
   
   val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", ModIOE, "", 0.0f, 0, 0, 0,
-      None, None, None, None, None, None, None, None)
+      None, None, None, None, None, None, None, None, None)
 }

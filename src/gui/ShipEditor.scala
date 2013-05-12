@@ -18,6 +18,14 @@ import scala.swing.event.MouseEvent
 import scala.swing.event.MouseMoved
 import scala.swing.event.MousePressed
 
+import scalaz.Scalaz.ToEqualOps
+import scalaz.Scalaz.ToOptionIdOps
+import scalaz.Scalaz.doubleInstance
+import scalaz.Scalaz.intInstance
+import scalaz.Scalaz.stringInstance
+
+import com.weiglewilczek.slf4s.Logging
+
 import data.general.DataModel
 import data.general.Point
 import data.general.RangeOverlap.range2Overlap
@@ -28,7 +36,8 @@ import data.xml.Ship
 import data.xml.ShipModule
 import gui.MouseEventWrappers.click2wrapper
 import gui.MouseEventWrappers.event2wrapper
-import scalaz.Scalaz._
+import sim.ShipStatisticsOut
+import sim.Simulator
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -207,7 +216,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
       val name = getName()
       if ( name.isDefined ) {
         shipModel = shipModel.withName(name.get)
-        dataModel.save(shipModel).foreach{ saved => 
+        dataModel.save(shipModel).foreach{ saved =>
           publish(ShipSaved(saved))
         }
       }
@@ -216,7 +225,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
       val name = getName()
       if ( name.isDefined ) {
         shipModel = shipModel.withName(name.get)
-        dataModel.saveToFile(shipModel, file).foreach{ saved => 
+        dataModel.saveToFile(shipModel, file).foreach{ saved =>
           publish(ShipSaved(saved))
         }
       }

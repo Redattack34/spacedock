@@ -243,6 +243,9 @@ class ShipModel( val hull: Hull, val ship: Ship, val combatState: CombatState, v
   val sublightSpeed = if ( mass === 0 ) 0 else sublightThrust / mass
   val ftlSpeed = if ( mass === 0 ) 0 else ( warpThrust / mass ) * 35
   val turnRate = if ( mass === 0 ) 0 else math.toDegrees(( turnThrust.toDouble / mass ) / 700)
+  val ordnanceGeneration = allModules.values
+      .flatMap(_.ordnanceAddedPerSecond)
+      .sum
   val ordnanceCapacity = allModules.values
       .flatMap(_.ordnanceCapacity)
       .sum

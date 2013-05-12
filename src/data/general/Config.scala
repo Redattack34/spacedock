@@ -2,37 +2,52 @@ package data.general
 
 import java.io.File
 import java.io.PrintStream
+
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
+
+import scala.Array.canBuildFrom
+import scala.Array.fallbackCanBuildFrom
 import scala.Iterator.continually
 import scala.collection.TraversableOnce.flattenTraversableOnce
 import scala.io.Source
-import scalaz.Scalaz._
-import data.general.FileExtension._
+
+import scalaz.Scalaz.ToEqualOps
+import scalaz.Scalaz.intInstance
+import scalaz.Scalaz.stringInstance
+
 import com.weiglewilczek.slf4s.Logging
-import javax.swing.JOptionPane
+
+import data.general.FileExtension.extension2File
+import data.general.FileExtension.file2Extension
 
 object Config extends Logging {
 
+  private final val INSTALL_PREFIX = "Install:"
+  private final val USER_PREFIX = "User:"
+  private final val LANGUAGE_PREFIX = "Language:"
+  private final val MOD_PREFIX = "Mod:"
+
   private[this] var _install : File = null
-  def install = _install
+  def install : File = _install
   private def install_=(file: File) = {
     _install = file
   }
 
   private[this] var _user : File = null
-  def user = _user
+  def user : File = _user
   private def user_=(file: File) = {
     _user = file
   }
 
   private[this] var _mods : Seq[String] = Vector()
-  def mods = _mods
+  def mods : Seq[String] = _mods
   private def mods_=(newMods: Seq[String]) = {
     _mods = newMods
   }
-  
+
   private[this] var _language : String = null
-  def language = _language;
+  def language : String = _language;
   private def language_=(newLang: String) = {
     _language = newLang
   }
@@ -40,17 +55,17 @@ object Config extends Logging {
   val chooser = new JFileChooser
   chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
 
-  def addMod( name: String ) = {
+  def addMod( name: String ) : Unit = {
     mods = mods ++ Seq(name)
     write
   }
 
-  def removeMod( name: String ) = {
+  def removeMod( name: String ) : Unit = {
     mods = mods.filterNot(_ === name)
     write
   }
 
-  def clearMods = {
+  def clearMods() : Unit = {
     mods = Vector()
     write
   }
@@ -64,9 +79,16 @@ object Config extends Logging {
   }
   else {
     logger.info("Loading from config file...")
-    this.install = getInstallDirFromFile(config)
-    this.user = getUserDirFromFile(config)
-    this.language = getLanguageFromFile( config )
+    this.install = getStringFromFile(config, INSTALL_PREFIX)
+                    .map(new File(_))
+                    .orElse(installDirs.find(isValidInstallDir))
+                    .get
+    this.user = getStringFromFile(config, USER_PREFIX)
+                  .map(new File(_))
+                  .orElse(userDirs.find(isValidUserDir))
+                  .get
+    this.language = getStringFromFile( config, LANGUAGE_PREFIX )
+                    .getOrElse("English")
     this.mods = getModsFromFile(config)
   }
   logger.info("Install Directory: " + install.getAbsolutePath())
@@ -74,53 +96,52 @@ object Config extends Logging {
   logger.info("Language: " + language )
   mods.foreach( mod => logger.info("Mod: " + mod ) )
   write
-  
-  private def getInstallDirFromFile( f: File ) : File = {
-    Source.fromFile(f).getLines.find(_.startsWith("Install:")) match {
-      case Some(line) => new File( line.replaceFirst("Install:", "").trim )
-      case None => installDirs.find(isValidInstallDir).get
-    }
-  }
-  
-  private def getUserDirFromFile( f: File ) : File = {
-    Source.fromFile(f).getLines.find(_.startsWith("User:")) match {
-      case Some(line) => new File( line.replaceFirst("User:", "").trim )
-      case None => userDirs.find(isValidUserDir).get
-    }
-  }
-  
+
+  private def getStringFromFile( f: File, prefix: String ) =
+    Source.fromFile(f)
+      .getLines
+      .find(_.startsWith(prefix))
+      .map(_.replaceFirst(prefix, "").trim)
+
   private def getModsFromFile( f: File ) : Seq[String] = {
     Source.fromFile(f).getLines.filter(_.startsWith("Mod:")).map(_.replaceFirst("Mod:", "").trim).toSeq
   }
-  
-  private def getLanguageFromFile( f: File ) : String = {
-    Source.fromFile(f).getLines.find(_.startsWith("Language:")) match {
-      case Some(line) => line.replaceFirst("Language:", "").trim
-      case None => getLanguage()
-    }
-  }
-  
+
   private def getPossibleLanguages() : Seq[String] = {
     (install / 'Content / 'Localization).listFiles.map(_.getName).map(_.replaceAll(".xml", ""))
   }
 
   private def isValidInstallDir( f: File ) : Boolean = {
+    def logFailed(reason: String) : Unit =
+      logger.warn( "Invalid install dir (" + f + "): " + reason )
 
-    def logFailed(reason: String) = logger.warn( "Invalid install dir (" + f + "): " + reason )
-    if (f eq null) { logFailed(""); return false }
-    if (!f.exists()) { logFailed("Doesn't Exist"); return false}
-    if (!f.list.contains("Content")) { logFailed("Doesn't contain Content folder"); return false}
-    if (!f.list.contains("Mods")) { logFailed("Doesn't contain Mods folder"); return false}
-    return true;
+    if (f eq null) { logFailed(""); false }
+    else if (!f.exists()) { logFailed("Doesn't Exist");  false}
+    else if (!f.list.contains("Content")) {
+      logFailed("Doesn't contain Content folder")
+      false
+    }
+    else if (!f.list.contains("Mods")) {
+      logFailed("Doesn't contain Mods folder")
+      false
+    }
+    else true;
   }
 
   private def isValidUserDir( f: File ) : Boolean = {
-    def logFailed(reason: String) = logger.warn( "Invalid user dir (" + f + "): " + reason )
-    if (f eq null) { logFailed(""); return false }
-    if (!f.exists()) { logFailed("Doesn't Exist"); return false}
-    if (!f.list.contains("Saved Designs")) { logFailed("Doesn't contain Saved Designs folder"); return false}
-    if (!f.list.contains("WIP")) { logFailed("Doesn't contain WIP folder"); return false}
-    return true
+    def logFailed(reason: String) : Unit =
+      logger.warn( "Invalid user dir (" + f + "): " + reason )
+    if (f eq null) { logFailed(""); false }
+    else if (!f.exists()) { logFailed("Doesn't Exist"); false}
+    else if (!f.list.contains("Saved Designs")) {
+      logFailed("Doesn't contain Saved Designs folder")
+      false
+    }
+    else if (!f.list.contains("WIP")) {
+      logFailed("Doesn't contain WIP folder")
+      false
+    }
+    else { true }
   }
 
   private def installDirs : Iterator[File] = Iterator(
@@ -147,16 +168,16 @@ object Config extends Logging {
       Iterator.empty
     }
   }
-  
+
   private def getLanguage() : String = {
     val languageOptions = getPossibleLanguages
     if ( languageOptions.length == 1 ) { languageOptions.head }
     else {
-      val selected = JOptionPane.showInputDialog(null, "Please select a language:", 
-          "Spacedock: Language Selection", JOptionPane.PLAIN_MESSAGE, null, 
+      val selected = JOptionPane.showInputDialog(null, "Please select a language:",
+          "Spacedock: Language Selection", JOptionPane.PLAIN_MESSAGE, null,
           languageOptions.toArray, "English")
       if ( selected == null ) { System.exit(0); "" }
-      else selected.toString
+      else { selected.toString }
     }
   }
 

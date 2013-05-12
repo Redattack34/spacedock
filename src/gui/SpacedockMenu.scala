@@ -51,7 +51,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object SaveAsItem extends MenuItem("Save As")
   case object ExitItem extends MenuItem("Exit")
   case object LoadModsItem extends MenuItem("Load Mods")
-  
+
   case class CombatStateButton( cs: CombatState ) extends RadioButton( cs.desc + "  " ) {
     tooltip = data.token(cs.token)
   }
@@ -67,7 +67,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   val orbitPort = CombatStateButton(OrbitPort)
   val orbitStarboard = CombatStateButton(OrbitStarboard)
   val evade = CombatStateButton(Evade)
-  
+
   val group = new ButtonGroup( artillery, attackRuns, holdPosition,
       orbitPort, orbitStarboard, evade );
 
@@ -129,7 +129,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
       val hullOpt = data.hullForShip(ship)
       if ( hullOpt.isEmpty ) { return } //Something very strange has occurred.
       val hull = hullOpt.get
-      
+
       val menuItem = new ShipMenuItem(ship, hull)
       val menu = hullMenuItems(hull.name)
       val index = menu.peer.getMenuComponents.indexWhere{ _.asInstanceOf[JMenuItem].getText === ship.name }

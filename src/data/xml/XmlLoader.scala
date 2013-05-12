@@ -38,13 +38,18 @@ trait XmlLoader[T] extends Logging {
   }
 
   def loadFromDirectory( dir: File ) : Seq[(File, Option[T])] = {
-    val allItems = for {
-      file <- dir.listFiles().toSeq.par
-      if (file.isFile())
-      xml = openFile(file)
-      items = safeLoad(file.some, xml)
-    } yield (file, items.headOption)
-    allItems.seq
+    try {
+      val allItems = for {
+        file <- dir.listFiles().toSeq.par
+        if (file.isFile())
+        xml = openFile(file)
+        items = safeLoad(file.some, xml)
+      } yield (file, items.headOption)
+      allItems.seq
+    }
+    catch {
+      case ex => { logger.error(dir.toString); throw ex }
+    }
   }
 
   def loadFromFile( f: File ) : Option[T] = {
