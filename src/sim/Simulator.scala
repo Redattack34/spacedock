@@ -9,12 +9,12 @@ import com.weiglewilczek.slf4s.Logging
 
 trait ShipStatisticsOut {
     def emitDamage( damage: Double, empDamage: Double, direction: Double ) : Unit
-    def frameComplete(currentEnergy: Double, currentOrdnance: Double, percent: Double) : Unit
+    def frameComplete(currentEnergy: Double, currentOrdnance: Double, time: Double) : Unit
 }
 
 object Simulator {
 
-  private val FRAMES_PER_SECOND = 60
+  val FRAMES_PER_SECOND = 60
 
   private def clamp[T : Order]( min: T, cur: T, max: T) : T = {
     if ( cur lt min ) min
@@ -39,12 +39,10 @@ object Simulator {
       out.emitDamage(damage, empDamage, direction)
 
     override def emitPowerChange( power: Double ) : Unit = {
-      logger.info( "Power Change: " + power )
       currentPower = clamp( 0.0, currentPower + power, maxPower );
     }
 
     override def emitOrdnanceChange( ordnance: Double ) : Unit = {
-      logger.info( "Ordnance Change: " + ordnance )
       currentOrdnance = clamp( 0.0, currentOrdnance + ordnance, maxOrdnance )
     }
 
@@ -63,7 +61,7 @@ object Simulator {
         emitPowerChange( +powerRegenPerFrame )
         emitOrdnanceChange( +ordnanceRegenPerFrame )
         currentFrame += 1
-        out.frameComplete(currentPower, currentOrdnance, currentFrame.toDouble / numFrames)
+        out.frameComplete(currentPower, currentOrdnance, currentFrame.toDouble / FRAMES_PER_SECOND)
       }
     }
   }

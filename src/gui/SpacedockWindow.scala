@@ -38,6 +38,7 @@ object Spacedock extends SimpleSwingApplication {
   val editorScroll: ScrollPane = new ScrollPane(shipEditor){ verticalScrollBar.unitIncrement = 16 }
   val shipStats: Component = new ShipStats(dataModel)
   val moduleStats: Component = new ModuleStats(dataModel)
+  val simStats: Component = new SimulatorPanel(dataModel)
   val sdMenuBar: MenuBar = new SpacedockMenu(dataModel)
   val modWindow: Window = new ModWindow(dataModel)
 
@@ -57,13 +58,15 @@ object Spacedock extends SimpleSwingApplication {
 
   modWindow.listenTo(sdMenuBar)
 
+  simStats.listenTo(shipEditor)
+
   this.listenTo(shipEditor)
   this.listenTo(sdMenuBar)
 
   dataModel.listenTo(modWindow)
 
   val toolPaneLeft = new SplitPane {
-    topComponent = new GridBagPanel
+    topComponent = simStats
     bottomComponent = shipStats
     oneTouchExpandable = true
     resizeWeight = 0.5
