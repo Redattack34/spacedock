@@ -27,6 +27,8 @@ import sim.ShipStatisticsOut
 import sim.Simulator
 import scala.swing.Alignment
 import scala.swing.event.EditDone
+import scala.swing.BorderPanel
+import java.awt.Dimension
 
 class SimulatorPanel( data: DataModel ) extends BoxPanel(Orientation.Vertical) {
 
@@ -54,9 +56,14 @@ class SimulatorPanel( data: DataModel ) extends BoxPanel(Orientation.Vertical) {
   ordnanceDomainAxis.setRange(0.0, 120.0)
   ordnanceChart.removeLegend
 
+  this.contents += Component.wrap( ordnanceChartPanel )
+
+  private val damageChart = new DamagePanel
+  this.contents += damageChart
+
   private var lastModel : Option[ShipModel] = none
 
-  this.contents += Component.wrap( ordnanceChartPanel )
+  this.preferredSize = new Dimension(150, 250)
 
   private val simulationTime = new TextField {
     object IntegerFilter extends DocumentFilter {
@@ -83,6 +90,7 @@ class SimulatorPanel( data: DataModel ) extends BoxPanel(Orientation.Vertical) {
   private def updateOnWt( model: ShipModel ) : Unit = Runnable {
     energySeries.clear
     ordnanceSeries.clear
+    damageChart.clear()
     future.foreach(_.cancel(true))
     future = Runnable{
         Simulator.runSimulator(model, data, ShipStatsOut, simTime)
@@ -106,12 +114,18 @@ class SimulatorPanel( data: DataModel ) extends BoxPanel(Orientation.Vertical) {
 
   private object ShipStatsOut extends ShipStatisticsOut {
     private var frameCount = 0
-    def emitDamage( damage: Double, empDamage: Double, direction: Double ) : Unit = Unit
+    def emitDamage( damage: Double, empDamage: Double, direction: Double ) : Unit = {
+      damageChart.addDamage(direction, damage, empDamage)
+    }
+
     def frameComplete(currentEnergy: Double, currentOrdnance: Double, time: Double) : Unit = Runnable {
       frameCount += 1
       val redraw = frameCount % Simulator.FRAMES_PER_SECOND == 0
       energySeries.add(time, currentEnergy, redraw)
       ordnanceSeries.add(time, currentOrdnance, redraw)
+      if ( redraw ) {
+        damageChart.setTime(time)
+      }
     }.runOnEdt
   }
 
@@ -123,5 +137,67 @@ class SimulatorPanel( data: DataModel ) extends BoxPanel(Orientation.Vertical) {
   }
   private object Runnable {
     def apply( f: => Unit ) : Runnable = new Runnable( f )
+  }
+
+  private class DirectionalDamagePanel( direction: String ) extends FlowPanel(FlowPanel.Alignment.Left)() {
+    addLabel(direction)
+    private val damageLabel = addLabel("Damage: 0 (EMP: 0)")
+    private val dpsLabel = addLabel("DPS: 0 (EMP: 0)")
+
+    private var damage = 0.0d
+    private var empDamage = 0.0d
+
+    private def addLabel( s: String ) : Label = {
+      val label = new Label( s )
+      label.horizontalAlignment = Alignment.Left
+      this.contents += label
+      label
+    }
+
+    def clear() : Unit = {
+      damage = 0
+      empDamage = 0
+    }
+
+    def addDamage( dam: Double, emp: Double) : Unit = {
+      damage += dam
+      empDamage += emp
+    }
+
+    def setTime( time: Double ) : Unit = {
+      damageLabel.text = "Damage: " + damage + " (EMP: " + empDamage + ")"
+      dpsLabel.text = "DPS: " + (damage / time) + " (EMP: " + (empDamage/time) + ")"
+    }
+  }
+
+  private class DamagePanel extends BoxPanel(Orientation.Vertical) {
+    private val damageLabel = new Label("Maximum Potential Damage Output: ")
+    damageLabel.horizontalAlignment = Alignment.Left
+    private val up = new DirectionalDamagePanel("UP")
+    private val left = new DirectionalDamagePanel("LEFT")
+    private val right = new DirectionalDamagePanel("RIGHT")
+    private val down = new DirectionalDamagePanel("DOWN")
+
+    private val panels = Seq(up, left, down, right)
+
+    this.contents ++ Seq(new FlowPanel(FlowPanel.Alignment.Left)(damageLabel)) ++ panels
+
+    def setTime( time: Double ) : Unit =
+      panels.foreach(_.setTime(time));
+
+    def clear() : Unit =
+      panels.foreach(_.clear());
+
+    def addDamage( direction: Double, damage: Double, empDamage: Double ) = {
+      val direction360 = if ( direction > 0 ) direction
+                         else 360 + direction
+      val panel = direction360 match {
+        case dir if 45 <= dir && dir <= 135 => up
+        case dir if 135 <= dir && dir <= 225 => left
+        case dir if 225 <= dir && dir <= 315 => down
+        case dir => right
+      }
+      panel.addDamage(damage, empDamage)
+    }
   }
 }

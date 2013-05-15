@@ -53,6 +53,9 @@ object Simulator {
         second <- 0 until seconds
         frame <- 0 until FRAMES_PER_SECOND
       } {
+        if ( Thread.interrupted() ) {
+          return;
+        }
         for {
           weapon <- weapons
         } {
