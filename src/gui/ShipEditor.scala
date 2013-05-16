@@ -6,9 +6,7 @@ import java.awt.Dimension
 import java.awt.Graphics2D
 import java.awt.Rectangle
 import java.awt.RenderingHints
-
 import javax.swing.JOptionPane
-
 import scala.swing.Component
 import scala.swing.event.Event
 import scala.swing.event.Key
@@ -17,15 +15,12 @@ import scala.swing.event.MouseDragged
 import scala.swing.event.MouseEvent
 import scala.swing.event.MouseMoved
 import scala.swing.event.MousePressed
-
 import scalaz.Scalaz.ToEqualOps
 import scalaz.Scalaz.ToOptionIdOps
 import scalaz.Scalaz.doubleInstance
 import scalaz.Scalaz.intInstance
 import scalaz.Scalaz.stringInstance
-
 import com.weiglewilczek.slf4s.Logging
-
 import data.general.DataModel
 import data.general.Point
 import data.general.RangeOverlap.range2Overlap
@@ -38,6 +33,7 @@ import gui.MouseEventWrappers.click2wrapper
 import gui.MouseEventWrappers.event2wrapper
 import sim.ShipStatisticsOut
 import sim.Simulator
+import scala.swing.event.MouseReleased
 
 case class ModulePickedUp( mod: ShipModule ) extends Event
 case class ShipModelChanged( model: ShipModel ) extends Event
@@ -97,15 +93,19 @@ class ShipEditor(dataModel: DataModel) extends Component {
 
   private var _shipModel = ShipModel.empty
   private def shipModel = _shipModel
-  private def shipModel_=( newModel: ShipModel ) : Unit = {
+  private def shipModel_=( newModel: ShipModel ) = setModel( newModel, true )
+  private def setModel( newModel: ShipModel, shouldPublish: Boolean ) : Unit = {
     val oldModel = _shipModel
-    if ( newModel == oldModel ) return
     _shipModel = newModel
-    publish(ShipModelChanged(newModel))
+    if ( shouldPublish) {
+      publish(ShipModelChanged(newModel))
+    }
     if ( oldModel.width =/=  newModel.width ||
          oldModel.height =/= newModel.height ) resize
     else repaint
   }
+
+  private var dragging = false
 
   private def resize : Unit = {
     val newWidth = shipModel.width + 20
@@ -234,6 +234,7 @@ class ShipEditor(dataModel: DataModel) extends Component {
     case MouseMoved(comp, loc, _) if comp == this => state = state.copy( mouseOver = getMouseOver(loc) )
     case e@MouseDragged(comp, loc, _) if comp == this => {
       this.requestFocus
+      dragging = true
       val oldMouseOver = mouseOver
       state = state.copy( mouseOver = getMouseOver(loc) )
       if (  mode.isFacing ) {
@@ -243,11 +244,15 @@ class ShipEditor(dataModel: DataModel) extends Component {
           if ( e.isAltDown ) pointAwayFromMouse _
           else if ( e.isCtrlDown ) pointToMouse _
           else shareDirection
-        shipModel = filtered.foldLeft(shipModel)(changeFacing(loc)(angleFunc) _)
+        setModel( filtered.foldLeft(shipModel)(changeFacing(loc)(angleFunc) _), shouldPublish = false )
       }
       if ( mode.isPlacement && oldMouseOver =/= mouseOver ) {
         leftClick(e)
       }
+    }
+    case MouseReleased(_, _, _, _, _) if dragging => {
+      dragging = false
+      setModel( shipModel, shouldPublish = true )
     }
     case cl: MousePressed if cl.isRight => { this.requestFocus; rightClick }
     case cl: MousePressed if cl.isMiddle => { this.requestFocus; middleClick }
