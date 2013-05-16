@@ -71,40 +71,29 @@ object Config extends Logging {
   }
 
   private[this] val config = new File("config")
-  if ( !config.exists() || !config.canRead() ) {
-    logger.info("Cannot read config file. Finding install directory...")
-    this.install = installDirs.find(isValidInstallDir).get
-    this.user = userDirs.find(isValidUserDir).get
-    this.language = getLanguage()
-  }
-  else {
-    logger.info("Loading from config file...")
-    this.install = getStringFromFile(config, INSTALL_PREFIX)
-                    .map(new File(_))
-                    .orElse(installDirs.find(isValidInstallDir))
-                    .get
-    this.user = getStringFromFile(config, USER_PREFIX)
-                  .map(new File(_))
-                  .orElse(userDirs.find(isValidUserDir))
-                  .get
-    this.language = getStringFromFile( config, LANGUAGE_PREFIX )
-                    .getOrElse("English")
-    this.mods = getModsFromFile(config)
-  }
+  this.install = installDirs.find(isValidInstallDir).get
+  this.user = userDirs.find(isValidUserDir).get
+  this.language = getLanguage()
   logger.info("Install Directory: " + install.getAbsolutePath())
   logger.info("User Directory: " + user.getAbsolutePath())
   logger.info("Language: " + language )
   mods.foreach( mod => logger.info("Mod: " + mod ) )
   write
 
-  private def getStringFromFile( f: File, prefix: String ) =
-    Source.fromFile(f)
-      .getLines
-      .find(_.startsWith(prefix))
-      .map(_.replaceFirst(prefix, "").trim)
+  private def getStringFromFile( f: File, prefix: String ) : Option[String] = {
+    if ( f.exists() && f.isFile() && f.canRead() ) {
+      Source.fromFile(f)
+        .getLines
+        .find(_.startsWith(prefix))
+        .map(_.replaceFirst(prefix, "").trim)
+    }
+    else {
+      None
+    }
+  }
 
   private def getModsFromFile( f: File ) : Seq[String] = {
-    Source.fromFile(f).getLines.filter(_.startsWith("Mod:")).map(_.replaceFirst("Mod:", "").trim).toSeq
+    Source.fromFile(f).getLines.filter(_.startsWith(MOD_PREFIX)).map(_.replaceFirst(MOD_PREFIX, "").trim).toSeq
   }
 
   private def getPossibleLanguages() : Seq[String] = {
@@ -144,14 +133,18 @@ object Config extends Logging {
     else { true }
   }
 
-  private def installDirs : Iterator[File] = Iterator(
-    new File( "C:\\Program Files\\Steam\\steamapps\\common\\StarDrive"),
-    new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive" )
-  ) ++ continually(showChooser("Select StarDrive Install Directory")).flatten
+  private def installDirs : Iterator[File] =
+    getStringFromFile(config, INSTALL_PREFIX).map(new File(_)).iterator ++
+    Iterator(
+      new File( "C:\\Program Files\\Steam\\steamapps\\common\\StarDrive"),
+      new File( "C:\\Program Files (x86)\\Steam\\steamapps\\common\\StarDrive" )
+    ) ++ continually(showChooser("Select StarDrive Install Directory")).flatten
 
-  private def userDirs : Iterator[File] = Iterator(
-    new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
-  ) ++ continually(showChooser("Select StarDrive Saved Ships Directory")).flatten
+  private def userDirs : Iterator[File] =
+    getStringFromFile(config, USER_PREFIX).map(new File(_)).iterator ++
+    Iterator(
+      new File( System.getProperty("user.home") + "/AppData/Roaming/StarDrive" )
+    ) ++ continually(showChooser("Select StarDrive Saved Ships Directory")).flatten
 
   private def showChooser( prompt: String ) : Iterator[File] = {
     chooser.setDialogTitle(prompt)
@@ -169,25 +162,26 @@ object Config extends Logging {
     }
   }
 
-  private def getLanguage() : String = {
-    val languageOptions = getPossibleLanguages
-    if ( languageOptions.length == 1 ) { languageOptions.head }
-    else {
-      val selected = JOptionPane.showInputDialog(null, "Please select a language:",
-          "Spacedock: Language Selection", JOptionPane.PLAIN_MESSAGE, null,
-          languageOptions.toArray, "English")
-      if ( selected == null ) { System.exit(0); "" }
-      else { selected.toString }
+  private def getLanguage() : String =
+    getStringFromFile(config, LANGUAGE_PREFIX).getOrElse{
+      val languageOptions = getPossibleLanguages
+      if ( languageOptions.length == 1 ) { languageOptions.head }
+      else {
+        val selected = JOptionPane.showInputDialog(null, "Please select a language:",
+            "Spacedock: Language Selection", JOptionPane.PLAIN_MESSAGE, null,
+            languageOptions.toArray, "English")
+        if ( selected == null ) { System.exit(0); "" }
+        else { selected.toString }
+      }
     }
-  }
 
   private def write = {
     if ( !config.exists() ) config.createNewFile
     val writer = new PrintStream( config )
-    writer.println("Install:" + install)
-    writer.println("User:" + user)
-    writer.println("Language:" + language)
-    mods.foreach(str => writer.println("Mod:" + str))
+    writer.println(INSTALL_PREFIX + install)
+    writer.println(USER_PREFIX + user)
+    writer.println(LANGUAGE_PREFIX + language)
+    mods.foreach(str => writer.println(MOD_PREFIX + str))
     writer.close
   }
 }
