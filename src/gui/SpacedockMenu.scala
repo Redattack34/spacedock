@@ -3,6 +3,7 @@ package gui
 import java.io.File
 import java.net.URL
 import javax.swing.JFileChooser
+import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 import scala.swing.ButtonGroup
@@ -13,12 +14,17 @@ import scala.swing.MenuItem
 import scala.swing.RadioButton
 import scala.swing.event.ButtonClicked
 import scala.swing.event.Event
-import scalaz.Scalaz._
+import scalaz.Scalaz.ToEqualOps
+import scalaz.Scalaz.ToOptionIdOps
+import scalaz.Scalaz.intInstance
+import scalaz.Scalaz.stringInstance
+import com.weiglewilczek.slf4s.Logging
 import data.general.DataModel
 import data.general.ReloadFromModel
 import data.xml.Hull
 import data.xml.Ship
-import javax.swing.JMenuItem
+import data.xnb.XnbReader
+import data.general.Config
 
 case class HullSelected( hull: Hull ) extends Event
 case class ShipSelected( ship: Ship, hull: Hull ) extends Event
@@ -33,7 +39,7 @@ case class SaveAs(file: File) extends Event
 case object OpenModWindow extends Event
 case class ShowGridSet( showGrid: Boolean ) extends Event
 
-class SpacedockMenu( data: DataModel ) extends MenuBar {
+class SpacedockMenu( data: DataModel ) extends MenuBar with Logging {
 
   case class HullMenuItem(val hull: Hull) extends MenuItem("New " + hull.name)
   case class ShipMenuItem(val ship: Ship, val hull: Hull ) extends MenuItem(ship.name)
@@ -51,6 +57,7 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
   case object SaveAsItem extends MenuItem("Save As")
   case object ExitItem extends MenuItem("Exit")
   case object LoadModsItem extends MenuItem("Load Mods")
+  case object ExtractTexturesItem extends MenuItem("Extract Textures")
 
   case class CombatStateButton( cs: CombatState ) extends RadioButton( cs.desc + "  " ) {
     tooltip = data.token(cs.token)
@@ -75,7 +82,9 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   val toolsMenu = new Menu("Tools")
   toolsMenu.contents ++= Seq( ZoomMenuItem, ShowFiringArcsItem, MirrorItem,
-      ShowGridItem, ShowEmptySlotsItem, FillEmptySlotsItem )
+      ShowGridItem, ShowEmptySlotsItem, FillEmptySlotsItem, ExtractTexturesItem )
+  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowGridItem,
+    ShowEmptySlotsItem, FillEmptySlotsItem, ExtractTexturesItem )
 
   var hullMenuItems = Map[String, Menu]()
 
@@ -115,9 +124,9 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
 
   contents ++= Seq( fileMenu, shipsMenu, toolsMenu, attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
-  listenTo( ZoomMenuItem, ShowFiringArcsItem, MirrorItem, ShowGridItem,
-      ShowEmptySlotsItem, FillEmptySlotsItem, attackRuns, artillery,
+  listenTo(attackRuns, artillery,
       holdPosition, orbitPort, orbitStarboard, evade)
+
 
   def shipLoaded(shipOpt: Option[Ship]) : Unit = {
     if ( shipOpt.isEmpty ) {
@@ -191,6 +200,30 @@ class SpacedockMenu( data: DataModel ) extends MenuBar {
     case ButtonClicked(FillEmptySlotsItem) => publish( FillEmptySlots )
     case ButtonClicked(LoadModsItem) => publish( OpenModWindow )
     case ButtonClicked(CombatStateButton(cs)) => publish( CombatStateSet(cs))
+    case ButtonClicked(ExtractTexturesItem) => {
+      val tempChooser = new JFileChooser(Config.install)
+      tempChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
+      tempChooser.setDialogTitle("Select Texture File(s) or Folder(s)")
+      tempChooser.setMultiSelectionEnabled(true)
+      val accepted = tempChooser.showDialog(this.peer.getParent(), "Extract")
+      if (accepted === JFileChooser.APPROVE_OPTION) {
+        val files = tempChooser.getSelectedFiles()
+        val errors = XnbReader.extractImages(files:_*)
+        errors.foreach{ case (file, error) =>
+          logger.error( "Failed to read " + file + ": ", error)
+        }
+        if ( !errors.isEmpty ) {
+          val errorString = "Failed to extract textures (See log for more details):\n" +
+            errors.map{ case(file, error) => file.getName() + ": " + error.getMessage }.mkString("\n")
+          JOptionPane.showMessageDialog(this.peer.getParent(), errorString,
+              "Spacedock: TextureExtractionFailed", JOptionPane.ERROR_MESSAGE);
+        }
+        else {
+          JOptionPane.showMessageDialog(this.peer.getParent(), "Extraction Complete",
+              "Spacedock: Texture Extraction Successful", JOptionPane.INFORMATION_MESSAGE);
+        }
+      }
+    }
     case ReloadFromModel => {
       shipsMenu.contents.clear
       loadMenus

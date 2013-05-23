@@ -8,21 +8,23 @@ import java.io.IOException
 import java.io.InputStream
 import java.lang.ProcessBuilder
 import java.lang.String
-
 import javax.imageio.ImageIO
-
-import scala.Array.canBuildFrom
-
+import scala.Option.option2Iterable
+import scalaz.Scalaz.ToEqualOps
+import scalaz.Scalaz.ToOptionIdOps
+import scalaz.Scalaz.intInstance
+import scalaz.Scalaz.none
+import scalaz.Scalaz.stringInstance
 import scalaz.Scalaz._
-
 import com.google.common.io.ByteStreams
-
 import ImageFormat.ImageFormat
 import InputStreamUtils.read7BitInt
 import InputStreamUtils.readInt
 import InputStreamUtils.readString
+import data.general.FileExtension.file2Extension
+import com.weiglewilczek.slf4s.Logging
 
-object XnbReader {
+object XnbReader extends Logging {
 
   case class ReaderType(val reader: String, val version: Int)
   case class XNBHeader(val platform: Char, val version: Byte, val flag: Byte, val size: Int, val readers: Seq[ReaderType], val sharedResourceCount: Int)
@@ -109,21 +111,37 @@ object XnbReader {
     either.left.map(ex => new IOException( "Failed to read texture: " + f.getAbsolutePath(), ex))
   }
 
-  def main(args: Array[String]) {
-    if ( args.length < 1 ) {
-      println("Usage: XnbReader C:/Path/To/Dir/With/XNB/Files")
-      return
+  def saveImage( f: File, img: BufferedImage ) : Either[IOException, Unit] = {
+    try {
+      val outFile = new File( f.getAbsolutePath().replace(".xnb", ".png"))
+      logger.info("Saving image to " + outFile.getAbsolutePath )
+      ImageIO.write(img, "png", outFile)
+      Right(Unit)
     }
-    
-    val dir = new File(args(0))
-    for {
-      file <- dir.listFiles
-      if ( file.getName().endsWith("xnb") )
-      either = read(file)
-      outFile = new File( file.getAbsolutePath().replace(".xnb", ".png"))
-    } {
-      if ( either.isLeft ) either.left.get.printStackTrace
-      else ImageIO.write(either.right.get.asInstanceOf[BufferedImage], "png", outFile)
+    catch {
+      case ex : IOException => Left(ex)
     }
+  }
+
+  private def extract( f: File ) : Option[IOException] = {
+    logger.info( "Extracting texture from " + f.getAbsolutePath )
+    read(f).right.flatMap(img => saveImage(f, img.asInstanceOf[BufferedImage])).left.toOption
+  }
+
+  def extractImages( files: File* ) : Map[File, IOException] = {
+    val temp = files flatMap { file : File =>
+      if ( file.isDirectory() ) {
+        file.listFiles.foreach(println)
+        val options = for {
+          child <- file.listFiles().toSeq
+          if ( child.extension === "xnb" )
+        } yield (child, extract( child ))
+        options
+      }
+      else {
+        Seq((file, extract( file )))
+      }
+    }
+    temp.flatMap{ case (f, opt) => if ( opt.isDefined ) (f, opt.get).some else None }.toMap
   }
 }
