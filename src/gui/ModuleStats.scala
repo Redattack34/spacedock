@@ -1,14 +1,12 @@
 package gui
 
 import java.awt.Color
-
 import scala.swing.BoxPanel
 import scala.swing.Label
 import scala.swing.Orientation
-
 import scalaz.Scalaz._
-
 import data.general.DataModel
+import java.text.DecimalFormat
 
 class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
 
@@ -72,6 +70,8 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
   def showIf[T]( opt: Option[T] ) (labels: Label*)(f: T => Unit) : Unit =
     showIf( opt.isDefined, opt )(labels:_*)(f)
 
+  val singleDecimal = new DecimalFormat("#######.#")
+
   reactions += {
     case ModuleSelected(mod) => {
       moduleName.text = token(mod.nameIndex)
@@ -79,28 +79,28 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
       restrictions.text = "Restrictions: " + mod.restrictions.description
       image.icon = moduleImage(mod).icon
       itemSize.text = "Size: " + mod.xSize + "x" + mod.ySize
-      mass.text = "Mass: " + mod.mass
-      cost.text = "Cost: " + mod.cost
+      mass.text = "Mass: " + singleDecimal.format(mod.mass)
+      cost.text = "Cost: " + singleDecimal.format(mod.cost)
       health.text = "Health: " + mod.health
-      power.text = "Power: " + (-mod.powerDraw)
+      power.text = "Power: " + singleDecimal.format(-mod.powerDraw)
 
-      showIf( mod.bonusRepair )( bonusRepair ) { data =>
-        bonusRepair.text = "Repair Bonus: " + data
+      showIf( mod.bonusRepair )( bonusRepair ) { bonus =>
+        bonusRepair.text = "Repair Bonus: " + bonus
       }
 
       showIf( mod.moduleType === "Shield", mod.shieldData
-           )( shieldSize, shieldStrength, shieldRecharge, shieldDelay ){ data =>
-          shieldStrength.text = "Shield Strength: " + data.shieldPower
-          shieldSize.text = "Shield Size:" + data.radius
-          shieldRecharge.text = "Shield Recharge Rate: " + data.rechargeRate
-          shieldDelay.text = "Shield Recharge Delay: " + data.rechargeDelay
+           )( shieldSize, shieldStrength, shieldRecharge, shieldDelay ){ shieldData =>
+          shieldStrength.text = "Shield Strength: " + shieldData.shieldPower
+          shieldSize.text = "Shield Size:" + shieldData.radius
+          shieldRecharge.text = "Shield Recharge Rate: " + singleDecimal.format(shieldData.rechargeRate)
+          shieldDelay.text = "Shield Recharge Delay: " + singleDecimal.format(shieldData.rechargeDelay)
       }
 
       showIf( mod.moduleType === "PowerPlant" || mod.moduleType === "FuelCell", mod.powerPlantData
-           )( explodes, powerStorage ) { data =>
-        power.text = "Power: " + data.powerFlowMax
-        powerStorage.text = "Power Store: " + data.powerStoreMax
-        explodes.visible = data.explodes
+           )( explodes, powerStorage ) { powerData =>
+        power.text = "Power: " + powerData.powerFlowMax
+        powerStorage.text = "Power Store: " + powerData.powerStoreMax
+        explodes.visible = powerData.explodes
       }
 
       showIf( mod.moduleType === "Engine", mod.engineData
@@ -133,23 +133,23 @@ class ModuleStats( model: DataModel ) extends BoxPanel(Orientation.Vertical) {
            )( weaponRange, weaponFireDelay ) { stat =>
 
            showIf( stat.projectileCount )( weaponProjectileCount ) { data =>
-           weaponProjectileCount.text = "Projectile Count: " + data
+             weaponProjectileCount.text = "Projectile Count: " + data
            }
 
            showIf( stat.projectileSpeed )( weaponProjectileSpeed ) { data =>
-           weaponProjectileSpeed.text = "Projectile Speed: " + data
+             weaponProjectileSpeed.text = "Projectile Speed: " + data
            }
 
            showIf( stat.beamPowerPerSec )( weaponBeamPowerDrain ) { data =>
-           weaponBeamPowerDrain.text = "Power / Sec: " + data
+             weaponBeamPowerDrain.text = "Power / Sec: " + singleDecimal.format(data)
            }
 
            showIf( stat.ordnancePerShot )( weaponOrdnanceCost ) { data =>
-           weaponOrdnanceCost.text = "Ordnance / Shot: " + data
+             weaponOrdnanceCost.text = "Ordnance / Shot: " + singleDecimal.format(data)
            }
 
            showIf( stat.powerPerShot )( weaponPowerCost ) { data =>
-           weaponPowerCost.text = "Power / Shot: " + data
+             weaponPowerCost.text = "Power / Shot: " + singleDecimal.format(data)
            }
        }
     }
