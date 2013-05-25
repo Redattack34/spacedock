@@ -2,7 +2,8 @@ package data.xnb
 
 import java.io.InputStream
 
-import scalaz.Scalaz._
+import scalaz.Scalaz.ToEqualOps
+import scalaz.Scalaz.intInstance
 
 import com.google.common.base.Charsets
 

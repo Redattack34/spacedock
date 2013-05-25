@@ -25,21 +25,21 @@ case class HangarData( timerConstant: Int, isTroopBay: Boolean, isSupplyBay: Boo
 case class ShipModule(
     //Basics
     nameIndex: Int, descriptionIndex: Int, uid: String,
-    
+
     //Module structure stuff
     xSize: Int, ySize: Int, moduleType: String, restrictions: ModuleRestrictions,
     iconTexturePath: String,
-    
+
     //Game stats
     cost: Float, mass: Float, health: Int, powerDraw: Float, bonusRepair: Option[Int],
     ordnanceCapacity: Option[Int], ordnanceAddedPerSecond: Option[Double], cargoCapacity: Option[Int],
-    
+
     shieldData: Option[ShieldData],
     powerPlantData: Option[PowerPlantData],
     weaponData: Option[WeaponData],
     engineData: Option[EngineData],
     hangarData: Option[HangarData])
-    
+
 object Module extends XmlLoader[ShipModule] {
 
   private def shields( e : Elem ) : Seq[ShieldData] = for {
@@ -116,7 +116,7 @@ object Module extends XmlLoader[ShipModule] {
         weaponData.headOption, engineData.headOption, hangarData.headOption )
 
   def directory(base: File) = base / 'ShipModules
-  
+
   val dummy = new ShipModule(0, 0, "Dummy", 1, 1, "", ModIOE, "", 0.0f, 0, 0, 0,
       None, None, None, None, None, None, None, None, None)
 }

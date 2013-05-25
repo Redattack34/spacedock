@@ -94,7 +94,7 @@ object XnbReader extends Logging {
     try {
       val dataSize = readInt(is)
       val image = header.format.toImg(is, header.width, header.height, header.mips);
-      return Right(image)
+      Right(image)
     }
     catch {
       case ex: IOException => Left(ex)
@@ -123,25 +123,17 @@ object XnbReader extends Logging {
     }
   }
 
-  private def extract( f: File ) : Option[IOException] = {
+  private def extract( f: File ) : Either[IOException, Unit] = {
     logger.info( "Extracting texture from " + f.getAbsolutePath )
-    read(f).right.flatMap(img => saveImage(f, img.asInstanceOf[BufferedImage])).left.toOption
+    read(f).right.flatMap(img => saveImage(f, img.asInstanceOf[BufferedImage]))
   }
 
   def extractImages( files: File* ) : Map[File, IOException] = {
-    val temp = files flatMap { file : File =>
-      if ( file.isDirectory() ) {
-        file.listFiles.foreach(println)
-        val options = for {
-          child <- file.listFiles().toSeq
-          if ( child.extension === "xnb" )
-        } yield (child, extract( child ))
-        options
-      }
-      else {
-        Seq((file, extract( file )))
-      }
+    val allFiles = files.flatMap { file =>
+      if ( file.isDirectory() ) file.listFiles().filter( _.extension === "xnb" )
+      else Seq(file)
     }
-    temp.flatMap{ case (f, opt) => if ( opt.isDefined ) (f, opt.get).some else None }.toMap
+    val eithers = allFiles.map( f => (f, extract(f)))
+    eithers.collect{ case (f, Left(ex)) => (f, ex) }.toMap
   }
 }

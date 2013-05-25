@@ -51,19 +51,19 @@ object Hull extends XmlLoader[Hull] {
   } yield Hull( name, hull, role, "", iconPath, selectionGraphic.headOption, allThrusters,
       modelPath, defaultAIState, moduleSlots)
 
-  def directory(base: File) = base
-  
+  def directory(base: File) : File = base
+
   override def loadAll(base: File) : Seq[(File, Option[Hull])] = {
     val dir = base / 'Hulls
-    
+
     if ( !dir.exists || !dir.canRead() ) return Seq()
-    
+
     val hulls = for {
       race <- dir.listFiles
       ship <- race.listFiles
       loaded = super.loadFromFile(ship)
     } yield (ship, loaded.map( _.copy( race = race.getName ) ))
-    
+
     return hulls
   }
 }
