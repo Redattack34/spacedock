@@ -79,8 +79,9 @@ class ShipEditor(dataModel: DataModel) extends Component {
   private var _state = State(16, false, false, Point(0, 0), NormalMode, 0, false)
   private def state = _state
   private def state_=( state: State ) = {
+    val oldState = this._state
     this._state = state
-    repaint
+    if ( oldState.zoom =/= state.zoom ) resize else repaint
   }
 
   private def zoom = state.zoom
